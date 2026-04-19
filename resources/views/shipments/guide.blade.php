@@ -37,7 +37,7 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-brand-100 text-xs uppercase tracking-wide">{{ __('shipments.tracking_number') }}</p>
+                        <p class="text-brand-100 text-xs uppercase tracking-wide">{{ __('shipments.order_number') }}</p>
                         <p class="text-white font-mono text-xl tracking-wider">{{ $shipment->tracking_number }}</p>
                     </div>
                 </div>

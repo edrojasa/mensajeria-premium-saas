@@ -5,7 +5,8 @@
                 <div class="bg-gradient-to-r from-brand-700 to-brand-600 px-6 py-5">
                     <p class="text-brand-100 text-sm">{{ $organization->name }}</p>
                     <h1 class="text-white text-lg font-semibold mt-1">{{ __('tracking.public_heading') }}</h1>
-                    <p class="text-white font-mono mt-2 tracking-wide text-lg">{{ $shipment->tracking_number }}</p>
+                    <p class="text-brand-100 text-xs font-medium uppercase tracking-wide mt-3">{{ __('tracking.order_number_label') }}</p>
+                    <p class="text-white font-mono mt-1 tracking-wide text-xl font-bold">{{ $shipment->tracking_number }}</p>
                 </div>
                 <div class="p-6 space-y-5">
                     <div>

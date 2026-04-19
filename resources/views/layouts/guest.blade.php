@@ -7,24 +7,27 @@
 
         <title>{{ config('app.name') }}</title>
 
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @stack('styles')
     </head>
-    <body class="font-sans text-slate-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-b from-brand-50 to-slate-100">
-            <div>
-                <a href="{{ url('/') }}" class="block focus:outline-none focus:ring-2 focus:ring-brand-500 rounded-xl">
-                    <x-brand.logo class="scale-110" />
-                </a>
-            </div>
+    <body class="font-sans antialiased text-slate-900 min-h-screen flex flex-col bg-slate-100">
+        <div class="print:hidden">
+            @include('partials.site-header')
+        </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+        <main class="flex-1 flex flex-col justify-center px-4 py-10 sm:py-14 bg-gradient-to-br from-slate-100 via-brand-50/40 to-slate-200/60">
+            <div class="w-full max-w-md mx-auto">
                 {{ $slot }}
             </div>
+        </main>
+
+        <div class="print:hidden mt-auto">
+            @include('partials.site-footer')
         </div>
+
+        @stack('scripts')
     </body>
 </html>

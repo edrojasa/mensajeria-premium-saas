@@ -4,16 +4,20 @@ return [
     'menu' => 'Envíos',
 
     'title' => 'Envíos',
-    'subtitle_index' => 'Gestión de envíos del tenant actual',
+    'subtitle_index' => 'Gestiona guías y estados desde un solo lugar.',
+    'module_heading' => 'Centro de envíos',
+    'index_table_hint' => 'Filas ordenadas por fecha de creación. La guía es única por organización.',
+    'actions_column' => 'Acción',
     'subtitle_create' => 'Registrar nuevo envío',
     'subtitle_show' => 'Detalle del envío',
 
-    'create_action' => 'Registrar envío',
+    'create_action' => 'Crear envío',
     'create_button' => 'Guardar envío',
 
     'empty' => 'No hay envíos registrados.',
 
     'tracking_number' => 'Número de seguimiento',
+    'order_number' => 'Número de guía',
     'current_status' => 'Estado actual',
     'reference_internal' => 'Referencia interna',
     'notes_internal' => 'Notas internas',
@@ -83,6 +87,8 @@ return [
 
     'show_summary_title' => 'Resumen del envío',
     'timeline_title' => 'Seguimiento del envío',
+    'timeline_progress_hint' => 'Avance estimado según el estado operativo actual.',
+    'timeline_progress_label' => 'Avance operativo',
     'timeline_incident_banner' => 'Este envío tiene una incidencia registrada. Revise el historial para más detalle.',
     'timeline_done' => 'Completado',
     'timeline_active' => 'En curso',

@@ -12,6 +12,7 @@ module.exports = {
         extend: {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                display: ['Plus Jakarta Sans', 'Figtree', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 brand: {

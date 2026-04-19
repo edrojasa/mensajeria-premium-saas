@@ -11,9 +11,16 @@ return [
     'nav_contact' => 'Contacto',
     'nav_login' => 'Iniciar sesión',
 
-    'hero_title' => 'Tu logística, sin complicaciones',
-    'hero_subtitle' => 'Centraliza envíos, da tranquilidad a tus clientes con seguimiento público y gestión profesional — con la marca Mensajería Premium.',
+    'hero_title' => 'Soluciones de mensajería profesional',
+    'hero_subtitle' => 'Plataforma para empresas de transporte y mensajería: guías, seguimiento público y control operativo con identidad de marca.',
     'hero_tracking_placeholder' => 'Ej: RT-2026-000001',
+    'hero_cta_tracking' => 'Consultar envío',
+    'hero_cta_login' => 'Acceso empresas',
+
+    'step_track_1_title' => 'Introduce tu número de guía',
+    'step_track_1_desc' => 'El código RT que recibiste al registrar el envío.',
+    'step_track_2_title' => 'Indica la empresa (slug)',
+    'step_track_2_desc' => 'Si hay varias organizaciones con el mismo código, te pedimos este dato.',
 
     'services_title' => 'Servicios',
     'services_intro' => 'Plataforma pensada para empresas de mensajería en Colombia.',

@@ -99,6 +99,7 @@ class ShipmentController extends Controller
             'shipment' => $shipment,
             'statusOptions' => $statusOptions,
             'timelineSteps' => $this->buildTimelineSteps($shipment),
+            'timelineProgressPercent' => $this->timelineProgressPercent($shipment),
         ]);
     }
 
@@ -189,6 +190,17 @@ class ShipmentController extends Controller
         }
 
         return $steps;
+    }
+
+    private function timelineProgressPercent(Shipment $shipment): int
+    {
+        if ($shipment->status === ShipmentStatus::DELIVERED) {
+            return 100;
+        }
+
+        $rank = $this->resolveTimelineRank($shipment);
+
+        return (int) min(100, max(5, round(($rank / 4) * 100)));
     }
 
     private function resolveTimelineRank(Shipment $shipment): int

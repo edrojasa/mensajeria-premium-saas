@@ -6,8 +6,9 @@
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <h2 class="font-semibold text-xl text-slate-800 leading-tight">{{ __('shipments.subtitle_show') }}</h2>
-                <p class="font-mono text-sm text-brand-700 font-medium mt-1">{{ $shipment->tracking_number }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('shipments.order_number') }}</p>
+                <h2 class="font-mono text-xl font-bold text-brand-800 mt-1 tracking-wide">{{ $shipment->tracking_number }}</h2>
+                <p class="text-sm text-slate-600 mt-1">{{ __('shipments.subtitle_show') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('shipments.guide', $shipment) }}" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition">
@@ -37,8 +38,14 @@
                 </div>
                 <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div>
+                        <p class="text-xs font-medium text-slate-500">{{ __('shipments.order_number') }}</p>
+                        <p class="mt-1 font-mono text-lg font-bold text-brand-800">{{ $shipment->tracking_number }}</p>
+                    </div>
+                    <div>
                         <p class="text-xs font-medium text-slate-500">{{ __('shipments.current_status') }}</p>
-                        <p class="mt-1 text-lg font-semibold text-slate-900">{{ $shipment->statusLabel() }}</p>
+                        <div class="mt-2">
+                            <x-shipment-status-badge :status="$shipment->status" class="text-sm px-3 py-1" />
+                        </div>
                     </div>
                     @if ($shipment->reference_internal)
                         <div>
@@ -62,10 +69,31 @@
             </section>
 
             {{-- Timeline --}}
-            <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 md:p-8">
-                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600 mb-6">{{ __('shipments.timeline_title') }}</h3>
+            <section class="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ __('shipments.timeline_title') }}</h3>
+                        <p class="text-xs text-slate-500 mt-1">{{ __('shipments.timeline_progress_hint') }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-bold text-brand-700">{{ $timelineProgressPercent }}%</span>
+                        <span class="block text-xs text-slate-500">{{ __('shipments.timeline_progress_label') }}</span>
+                    </div>
+                </div>
+                <div class="mb-8">
+                    <div class="h-3 rounded-full bg-slate-200 overflow-hidden shadow-inner ring-1 ring-slate-200/80">
+                        <div
+                            class="h-full rounded-full bg-gradient-to-r from-brand-500 via-brand-600 to-indigo-600 transition-all duration-700 ease-out shadow-sm"
+                            style="width: {{ $timelineProgressPercent }}%"
+                            role="progressbar"
+                            aria-valuenow="{{ $timelineProgressPercent }}"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                        ></div>
+                    </div>
+                </div>
                 <div class="relative">
-                    <div class="hidden md:block absolute top-8 left-0 right-0 h-0.5 bg-slate-200 rounded" aria-hidden="true"></div>
+                    <div class="hidden md:block absolute top-8 left-0 right-0 h-1 bg-slate-200 rounded-full" aria-hidden="true"></div>
                     <ol class="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-4 relative">
                         @foreach ($timelineSteps as $step)
                             @php

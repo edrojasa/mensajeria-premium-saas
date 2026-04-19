@@ -13,6 +13,8 @@ return [
     'not_found' => 'No se encontró el envío',
     'specify_organization' => 'Varias empresas tienen ese código. Indique el identificador de la empresa.',
 
+    'order_number_label' => 'Número de guía',
+
     'public_title' => 'Seguimiento de envío',
     'public_heading' => 'Estado del envío',
     'current_status' => 'Estado',

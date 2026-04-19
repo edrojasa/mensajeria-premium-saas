@@ -34,7 +34,7 @@
                     <p class="org">{{ $shipment->organization->name }}</p>
                 </td>
                 <td style="text-align: right;">
-                    <p class="track-label">{{ __('shipments.tracking_number') }}</p>
+                    <p class="track-label">{{ __('shipments.order_number') }}</p>
                     <p class="track-val">{{ $shipment->tracking_number }}</p>
                 </td>
             </tr>
