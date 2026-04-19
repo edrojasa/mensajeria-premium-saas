@@ -23,6 +23,7 @@ class ShipmentTest extends TestCase
         $destinationCity = City::factory()->create();
 
         $payload = [
+            'customer_mode' => 'skip',
             'sender_name' => 'Ana López',
             'sender_phone' => '3001234567',
             'sender_email' => null,

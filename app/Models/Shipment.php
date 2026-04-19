@@ -43,6 +43,8 @@ class Shipment extends Model
         'declared_value',
         'status',
         'created_by_user_id',
+        'customer_id',
+        'assigned_user_id',
     ];
 
     protected $casts = [
@@ -53,6 +55,16 @@ class Shipment extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function assignedCourier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
     public function statusHistories(): HasMany

@@ -9,31 +9,61 @@ class ShipmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return ! $user->isMessenger();
     }
 
     public function view(User $user, Shipment $shipment): bool
     {
-        return $user->belongsToOrganization($shipment->organization_id);
+        if (! $user->belongsToOrganization($shipment->organization_id)) {
+            return false;
+        }
+
+        if ($user->isMessenger()) {
+            return $shipment->assigned_user_id !== null && (int) $shipment->assigned_user_id === (int) $user->id;
+        }
+
+        return true;
     }
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->canOperateLogistics();
     }
 
     public function update(User $user, Shipment $shipment): bool
     {
-        return $user->belongsToOrganization($shipment->organization_id);
+        if ($user->isMessenger()) {
+            return false;
+        }
+
+        return $user->belongsToOrganization($shipment->organization_id)
+            && $user->canOperateLogistics();
+    }
+
+    /**
+     * Cambiar estado / notas operativas (mensajeros solo en envíos asignados).
+     */
+    public function updateStatus(User $user, Shipment $shipment): bool
+    {
+        if (! $user->belongsToOrganization($shipment->organization_id)) {
+            return false;
+        }
+
+        if ($user->isMessenger()) {
+            return $shipment->assigned_user_id !== null
+                && (int) $shipment->assigned_user_id === (int) $user->id;
+        }
+
+        return $user->canOperateLogistics();
     }
 
     public function delete(User $user, Shipment $shipment): bool
     {
-        return $user->belongsToOrganization($shipment->organization_id);
+        return $this->update($user, $shipment);
     }
 
     public function viewGuide(User $user, Shipment $shipment): bool
     {
-        return $user->belongsToOrganization($shipment->organization_id);
+        return $this->view($user, $shipment);
     }
 }

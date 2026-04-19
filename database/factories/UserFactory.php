@@ -47,7 +47,7 @@ class UserFactory extends Factory
      *
      * @return static
      */
-    public function withOrganization(string $role = OrganizationRole::OWNER)
+    public function withOrganization(string $role = OrganizationRole::ADMIN)
     {
         return $this->afterCreating(function (User $user) use ($role) {
             $organization = \App\Models\Organization::factory()->create();

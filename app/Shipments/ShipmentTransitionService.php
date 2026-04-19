@@ -40,7 +40,24 @@ class ShipmentTransitionService
         ?string $notes,
         ?User $actor
     ): void {
+        $trimmedNotes = $notes !== null ? trim((string) $notes) : '';
+
         if ($shipment->status === $newStatus) {
+            if ($trimmedNotes === '') {
+                return;
+            }
+
+            DB::transaction(function () use ($shipment, $trimmedNotes, $actor): void {
+                ShipmentStatusHistory::create([
+                    'organization_id' => $shipment->organization_id,
+                    'shipment_id' => $shipment->id,
+                    'from_status' => $shipment->status,
+                    'to_status' => $shipment->status,
+                    'notes' => $trimmedNotes !== '' ? $trimmedNotes : null,
+                    'changed_by_user_id' => $actor?->id,
+                ]);
+            });
+
             return;
         }
 
@@ -64,7 +81,7 @@ class ShipmentTransitionService
                 'shipment_id' => $shipment->id,
                 'from_status' => $from,
                 'to_status' => $newStatus,
-                'notes' => $notes,
+                'notes' => $notes !== null && trim((string) $notes) !== '' ? trim((string) $notes) : null,
                 'changed_by_user_id' => $actor?->id,
             ]);
 

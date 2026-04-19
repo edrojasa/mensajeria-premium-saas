@@ -2,36 +2,57 @@
 
 namespace App\Http\Controllers;
 
+use App\Audit\AuditActions;
 use App\Http\Requests\StoreShipmentRequest;
+use App\Http\Requests\UpdateShipmentRequest;
 use App\Http\Requests\UpdateShipmentStatusRequest;
+use App\Http\Middleware\RedirectCourierFromStaffShipmentRoutes;
 use App\Models\City;
+use App\Models\Customer;
+use App\Models\CustomerAddress;
 use App\Models\Department;
 use App\Models\Shipment;
+use App\Models\User;
+use App\Organizations\OrganizationRole;
 use App\Shipments\ShipmentStatus;
+use App\Services\ActivityLogger;
 use App\Shipments\ShipmentTransitionRules;
 use App\Shipments\ShipmentTransitionService;
 use App\Shipments\TrackingNumberGenerator;
+use App\Support\ShipmentsListing;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class ShipmentController extends Controller
 {
-    public function index(): View
+    public function __construct()
+    {
+        $this->middleware(RedirectCourierFromStaffShipmentRoutes::class)->only(['index', 'create', 'edit']);
+    }
+
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Shipment::class);
 
-        $shipments = Shipment::query()
-            ->latest()
-            ->paginate(15);
+        $shipments = ShipmentsListing::filteredQuery($request)->paginate(15)->withQueryString();
 
-        return view('shipments.index', compact('shipments'));
+        $customers = Customer::query()->orderBy('name')->get(['id', 'name']);
+        $messengers = $this->messengersForTenant();
+
+        $statuses = collect(ShipmentStatus::all())
+            ->mapWithKeys(fn (string $key) => [$key => ShipmentStatus::label($key)])
+            ->all();
+
+        return view('shipments.index', compact('shipments', 'customers', 'messengers', 'statuses'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', Shipment::class);
 
@@ -40,7 +61,22 @@ class ShipmentController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('shipments.create', compact('departments'));
+        $messengers = $this->messengersForTenant();
+
+        $initialCustomers = Customer::query()
+            ->orderBy('name')
+            ->limit(40)
+            ->get(['id', 'name', 'phone', 'email']);
+
+        $preCustomerId = $request->query('customer_id');
+        if ($preCustomerId && ! $initialCustomers->contains('id', (int) $preCustomerId)) {
+            $extra = Customer::query()->find((int) $preCustomerId);
+            if ($extra) {
+                $initialCustomers = $initialCustomers->prepend($extra);
+            }
+        }
+
+        return view('shipments.create', compact('departments', 'messengers', 'initialCustomers', 'preCustomerId'));
     }
 
     public function store(
@@ -58,41 +94,145 @@ class ShipmentController extends Controller
 
         $validated = $request->validated();
 
-        $originCity = City::query()
-            ->with('department')
-            ->findOrFail($validated['origin_city_id']);
+        return DB::transaction(function () use ($validated, $transitionService, $trackingNumberGenerator, $request, $tenantId) {
+            if ($validated['customer_mode'] === 'new') {
+                $customer = Customer::create([
+                    'name' => $validated['new_customer_name'],
+                    'document' => $validated['new_customer_document'] ?? null,
+                    'phone' => $validated['new_customer_phone'],
+                    'email' => $validated['new_customer_email'] ?? null,
+                    'notes' => $validated['new_customer_notes'] ?? null,
+                ]);
+                $validated['customer_id'] = $customer->id;
+            } elseif ($validated['customer_mode'] === 'skip') {
+                $validated['customer_id'] = null;
+            }
 
-        $destinationCity = City::query()
-            ->with('department')
-            ->findOrFail($validated['destination_city_id']);
+            $attrs = $this->attributesFromShipmentForm($validated);
 
-        $validated['origin_city'] = $originCity->name;
-        $validated['origin_region'] = $originCity->department->name;
-        $validated['destination_city'] = $destinationCity->name;
-        $validated['destination_region'] = $destinationCity->department->name;
+            $shipment = new Shipment($attrs);
+            $shipment->tracking_number = $trackingNumberGenerator->generate($tenantId);
+            $shipment->status = ShipmentStatus::RECEIVED;
+            $shipment->created_by_user_id = $request->user()->id;
 
-        $shipment = new Shipment($validated);
-        $shipment->tracking_number = $trackingNumberGenerator->generate($tenantId);
-        $shipment->status = ShipmentStatus::RECEIVED;
-        $shipment->created_by_user_id = $request->user()->id;
+            $transitionService->createShipmentWithInitialStatus($shipment, $request->user());
 
-        $transitionService->createShipmentWithInitialStatus($shipment, $request->user());
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_CREATED,
+                __('audit.shipment_created', ['tracking' => $shipment->tracking_number]),
+                $shipment
+            );
+
+            return redirect()
+                ->route('shipments.show', $shipment)
+                ->with('status', __('shipments.created_success'));
+        });
+    }
+
+    public function edit(Shipment $shipment): View
+    {
+        $this->authorize('update', $shipment);
+
+        $departments = Department::query()
+            ->where('country_code', 'CO')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $messengers = $this->messengersForTenant();
+
+        $shipment->load(['customer.addresses']);
+
+        $initialCustomers = Customer::query()
+            ->orderBy('name')
+            ->limit(40)
+            ->get(['id', 'name', 'phone', 'email']);
+
+        if ($shipment->customer_id && ! $initialCustomers->contains('id', $shipment->customer_id)) {
+            $extra = Customer::query()->find($shipment->customer_id);
+            if ($extra) {
+                $initialCustomers = $initialCustomers->prepend($extra);
+            }
+        }
+
+        return view('shipments.edit', compact('shipment', 'departments', 'messengers', 'initialCustomers'));
+    }
+
+    public function update(
+        UpdateShipmentRequest $request,
+        Shipment $shipment,
+    ): RedirectResponse {
+        $this->authorize('update', $shipment);
+
+        $validated = $request->validated();
+
+        $beforeAssign = $shipment->assigned_user_id;
+
+        DB::transaction(function () use ($validated, $shipment) {
+            if ($validated['customer_mode'] === 'new') {
+                $customer = Customer::create([
+                    'name' => $validated['new_customer_name'],
+                    'document' => $validated['new_customer_document'] ?? null,
+                    'phone' => $validated['new_customer_phone'],
+                    'email' => $validated['new_customer_email'] ?? null,
+                    'notes' => $validated['new_customer_notes'] ?? null,
+                ]);
+                $validated['customer_id'] = $customer->id;
+            } elseif ($validated['customer_mode'] === 'skip') {
+                $validated['customer_id'] = null;
+            }
+
+            $attrs = $this->attributesFromShipmentForm($validated);
+
+            $shipment->fill($attrs);
+            $shipment->save();
+        });
+
+        $shipment->refresh();
+        $shipment->load('assignedCourier');
+
+        if ((int) $beforeAssign !== (int) ($shipment->assigned_user_id ?? 0)) {
+            $name = $shipment->assignedCourier?->name ?? __('shipments.unassigned_courier');
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_MESSENGER_ASSIGNED,
+                __('audit.shipment_messenger_assigned', ['name' => $name, 'tracking' => $shipment->tracking_number]),
+                $shipment
+            );
+        }
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::SHIPMENT_UPDATED,
+            __('audit.shipment_updated', ['tracking' => $shipment->tracking_number]),
+            $shipment
+        );
 
         return redirect()
             ->route('shipments.show', $shipment)
-            ->with('status', __('shipments.created_success'));
+            ->with('status', __('shipments.updated_success'));
     }
 
     public function show(Shipment $shipment): View
     {
         $this->authorize('view', $shipment);
 
-        $shipment->load(['statusHistories.changedBy', 'creator']);
+        $shipment->load(['statusHistories.changedBy', 'creator', 'customer', 'assignedCourier']);
 
-        $allowedKeys = ShipmentTransitionRules::allowedTargets($shipment->status);
+        $allowedKeys = array_values(array_unique(array_merge(
+            [$shipment->status],
+            ShipmentTransitionRules::allowedTargets($shipment->status)
+        )));
 
         $statusOptions = collect($allowedKeys)
-            ->mapWithKeys(fn (string $key) => [$key => ShipmentStatus::label($key)])
+            ->mapWithKeys(function (string $key) use ($shipment) {
+                $label = ShipmentStatus::label($key);
+                if ($key === $shipment->status) {
+                    $label .= ' ('.__('shipments.status_keep_note').')';
+                }
+
+                return [$key => $label];
+            })
             ->all();
 
         return view('shipments.show', [
@@ -237,19 +377,137 @@ class ShipmentController extends Controller
         return 'data:image/svg+xml;base64,'.base64_encode($result->getString());
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    private function messengersForTenant(): \Illuminate\Database\Eloquent\Collection
+    {
+        $orgId = tenant_id();
+        if ($orgId === null) {
+            return User::query()->whereRaw('1 = 0')->get();
+        }
+
+        return User::query()
+            ->join('organization_user', 'users.id', '=', 'organization_user.user_id')
+            ->where('organization_user.organization_id', $orgId)
+            ->where('organization_user.role', OrganizationRole::MENSAJERO)
+            ->where('organization_user.is_active', true)
+            ->select('users.*')
+            ->orderBy('users.name')
+            ->get();
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function attributesFromShipmentForm(array $validated): array
+    {
+        $mode = $validated['customer_mode'];
+
+        if ($mode === 'skip') {
+            $validated['customer_id'] = null;
+        }
+
+        if ($mode === 'existing' || $mode === 'new') {
+            $customerId = (int) $validated['customer_id'];
+            $customer = Customer::query()->findOrFail($customerId);
+            $validated['recipient_name'] = $customer->name;
+            $validated['recipient_phone'] = $customer->phone;
+            $validated['recipient_email'] = $customer->email;
+
+            if (! empty($validated['customer_address_id'])) {
+                $addr = CustomerAddress::query()->findOrFail((int) $validated['customer_address_id']);
+                if ((int) $addr->customer_id !== $customerId) {
+                    abort(422);
+                }
+                $validated['destination_address_line'] = $addr->address_line;
+                if ($addr->city_id && $addr->department_id) {
+                    $city = City::query()->with('department')->findOrFail($addr->city_id);
+                    $validated['destination_city_id'] = $city->id;
+                    $validated['destination_department_id'] = $city->department_id;
+                }
+            }
+        }
+
+        $originCity = City::query()
+            ->with('department')
+            ->findOrFail($validated['origin_city_id']);
+
+        $destinationCity = City::query()
+            ->with('department')
+            ->findOrFail($validated['destination_city_id']);
+
+        return [
+            'customer_id' => $mode === 'skip' ? null : ($validated['customer_id'] ?? null),
+            'assigned_user_id' => $validated['assigned_user_id'] ?? null,
+            'sender_name' => $validated['sender_name'],
+            'sender_phone' => $validated['sender_phone'],
+            'sender_email' => $validated['sender_email'] ?? null,
+            'recipient_name' => $validated['recipient_name'],
+            'recipient_phone' => $validated['recipient_phone'],
+            'recipient_email' => $validated['recipient_email'] ?? null,
+            'origin_address_line' => $validated['origin_address_line'],
+            'origin_city' => $originCity->name,
+            'origin_region' => $originCity->department->name,
+            'origin_postal_code' => $validated['origin_postal_code'] ?? null,
+            'origin_department_id' => $validated['origin_department_id'],
+            'origin_city_id' => $validated['origin_city_id'],
+            'destination_address_line' => $validated['destination_address_line'],
+            'destination_city' => $destinationCity->name,
+            'destination_region' => $destinationCity->department->name,
+            'destination_postal_code' => $validated['destination_postal_code'] ?? null,
+            'destination_department_id' => $validated['destination_department_id'],
+            'destination_city_id' => $validated['destination_city_id'],
+            'reference_internal' => $validated['reference_internal'] ?? null,
+            'notes_internal' => $validated['notes_internal'] ?? null,
+            'weight_kg' => $validated['weight_kg'] ?? null,
+            'declared_value' => $validated['declared_value'] ?? null,
+        ];
+    }
+
     public function updateStatus(
         UpdateShipmentStatusRequest $request,
         Shipment $shipment,
         ShipmentTransitionService $transitionService
     ): RedirectResponse {
-        $this->authorize('update', $shipment);
+        $this->authorize('updateStatus', $shipment);
+
+        $validated = $request->validated();
+        $from = $shipment->status;
 
         $transitionService->transitionTo(
             $shipment,
-            $request->validated('status'),
-            $request->validated('notes'),
+            $validated['status'],
+            $validated['notes'] ?? null,
             $request->user()
         );
+
+        $shipment->refresh();
+
+        if ($from === $validated['status']) {
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_COURIER_NOTE,
+                (string) ($validated['notes'] ?? ''),
+                $shipment
+            );
+        } else {
+            $desc = __('audit.shipment_status_changed', [
+                'from' => ShipmentStatus::label($from),
+                'to' => ShipmentStatus::label($validated['status']),
+            ]);
+            $note = trim((string) ($validated['notes'] ?? ''));
+            if ($note !== '') {
+                $desc .= ' — '.$note;
+            }
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_STATUS_CHANGED,
+                $desc,
+                $shipment
+            );
+        }
 
         return redirect()
             ->route('shipments.show', $shipment)

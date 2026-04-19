@@ -7,11 +7,62 @@
     </x-slot>
 
     <div class="py-10 md:py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-4">
-            <x-auth-session-status class="mb-6" :status="session('status')" />
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-4 space-y-6">
+            <x-auth-session-status class="mb-2" :status="session('status')" />
+
+            @if (auth()->user()->canExportTenantReports())
+                <div class="flex flex-wrap gap-3 justify-end">
+                    <a href="{{ route('exports.shipments.excel', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.excel') }}</a>
+                    <a href="{{ route('exports.shipments.pdf', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.pdf') }}</a>
+                </div>
+            @endif
+
+            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5">
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ __('shipments.filters_heading') }}</p>
+                <form method="GET" action="{{ route('shipments.index') }}" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div>
+                        <x-input-label for="date_from" :value="__('shipments.filter_date_from')" />
+                        <x-text-input id="date_from" name="date_from" type="date" class="mt-2 block w-full rounded-xl" :value="request('date_from')" />
+                    </div>
+                    <div>
+                        <x-input-label for="date_to" :value="__('shipments.filter_date_to')" />
+                        <x-text-input id="date_to" name="date_to" type="date" class="mt-2 block w-full rounded-xl" :value="request('date_to')" />
+                    </div>
+                    <div>
+                        <x-input-label for="filter_status" :value="__('shipments.filter_status')" />
+                        <select id="filter_status" name="status" class="mt-2 block w-full rounded-xl border-slate-300 shadow-sm text-sm">
+                            <option value="">{{ __('shipments.filter_all') }}</option>
+                            @foreach ($statuses as $value => $label)
+                                <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <x-input-label for="filter_customer" :value="__('shipments.filter_customer')" />
+                        <select id="filter_customer" name="customer_id" class="mt-2 block w-full rounded-xl border-slate-300 shadow-sm text-sm">
+                            <option value="">{{ __('shipments.filter_all') }}</option>
+                            @foreach ($customers as $c)
+                                <option value="{{ $c->id }}" @selected((string) request('customer_id') === (string) $c->id)>{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <x-input-label for="filter_messenger" :value="__('shipments.filter_messenger')" />
+                        <select id="filter_messenger" name="assigned_user_id" class="mt-2 block w-full rounded-xl border-slate-300 shadow-sm text-sm">
+                            <option value="">{{ __('shipments.filter_all') }}</option>
+                            @foreach ($messengers as $m)
+                                <option value="{{ $m->id }}" @selected((string) request('assigned_user_id') === (string) $m->id)>{{ $m->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2 md:col-span-2 lg:col-span-3 xl:col-span-1 xl:flex-col xl:items-stretch">
+                        <x-primary-button type="submit" class="w-full justify-center rounded-xl">{{ __('shipments.filter_apply') }}</x-primary-button>
+                        <a href="{{ route('shipments.index') }}" class="inline-flex justify-center items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{{ __('shipments.filter_clear') }}</a>
+                    </div>
+                </form>
+            </div>
 
             <div class="rounded-3xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/10 overflow-hidden ring-1 ring-slate-900/5">
-                {{-- Toolbar del módulo: título contextual + crear envío (visible siempre) --}}
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 sm:px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-brand-50/50">
                     <div class="flex items-start gap-4 min-w-0">
                         <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/30">
@@ -45,6 +96,7 @@
                                         <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.order_number') }}</th>
                                         <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.recipient_name') }}</th>
                                         <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.destination_city') }}</th>
+                                        <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.column_messenger') }}</th>
                                         <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.current_status') }}</th>
                                         <th scope="col" class="px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.created_at_column') }}</th>
                                         <th scope="col" class="px-5 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('shipments.actions_column') }}</th>
@@ -58,6 +110,7 @@
                                             </td>
                                             <td class="px-5 py-4 text-slate-900 font-medium">{{ $shipment->recipient_name }}</td>
                                             <td class="px-5 py-4 text-slate-600">{{ $shipment->destination_city }}</td>
+                                            <td class="px-5 py-4 text-slate-700">{{ $shipment->assignedCourier?->name ?? __('shipments.unassigned_courier') }}</td>
                                             <td class="px-5 py-4">
                                                 <x-shipment-status-badge :status="$shipment->status" />
                                             </td>

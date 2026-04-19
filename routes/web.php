@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\CourierShipmentController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DataExportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationSwitcherController;
+use App\Http\Controllers\OrganizationUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\PublicTrackingController;
@@ -29,13 +34,58 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::get('/logs', [ActivityLogController::class, 'index'])
+        ->name('logs.index');
+
+    Route::prefix('exports')->group(function () {
+        Route::get('/shipments/excel', [DataExportController::class, 'shipmentsExcel'])
+            ->name('exports.shipments.excel');
+        Route::get('/shipments/pdf', [DataExportController::class, 'shipmentsPdf'])
+            ->name('exports.shipments.pdf');
+        Route::get('/customers/excel', [DataExportController::class, 'customersExcel'])
+            ->name('exports.customers.excel');
+        Route::get('/customers/pdf', [DataExportController::class, 'customersPdf'])
+            ->name('exports.customers.pdf');
+        Route::get('/users/excel', [DataExportController::class, 'usersExcel'])
+            ->name('exports.users.excel');
+        Route::get('/users/pdf', [DataExportController::class, 'usersPdf'])
+            ->name('exports.users.pdf');
+        Route::get('/messengers/excel', [DataExportController::class, 'messengersExcel'])
+            ->name('exports.messengers.excel');
+        Route::get('/messengers/pdf', [DataExportController::class, 'messengersPdf'])
+            ->name('exports.messengers.pdf');
+    });
+
     Route::get('/geo/cities', [GeoController::class, 'citiesByDepartment'])
         ->name('geo.cities');
+
+    Route::get('/customers/search', [CustomerController::class, 'search'])
+        ->name('customers.search');
+
+    Route::get('/customers/{customer}/addresses', [CustomerController::class, 'addressesJson'])
+        ->name('customers.addresses');
+
+    Route::resource('customers', CustomerController::class);
+
+    Route::get('/users', [OrganizationUserController::class, 'index'])
+        ->name('users.index');
+
+    Route::get('/users/create', [OrganizationUserController::class, 'create'])
+        ->name('users.create');
+
+    Route::post('/users', [OrganizationUserController::class, 'store'])
+        ->name('users.store');
+
+    Route::patch('/users/{user}', [OrganizationUserController::class, 'update'])
+        ->name('users.update');
+
+    Route::get('/my-shipments', [CourierShipmentController::class, 'index'])
+        ->name('courier.shipments.index');
 
     Route::post('/shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])
         ->name('shipments.status.update');
 
-    Route::resource('shipments', ShipmentController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('shipments', ShipmentController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
 
     Route::get('/shipments/{shipment}/guide', [ShipmentController::class, 'guide'])
         ->name('shipments.guide');

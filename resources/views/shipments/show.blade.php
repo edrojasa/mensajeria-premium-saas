@@ -11,6 +11,11 @@
                 <p class="text-sm text-slate-600 mt-1">{{ __('shipments.subtitle_show') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
+                @can('update', $shipment)
+                    <a href="{{ route('shipments.edit', $shipment) }}" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-slate-800 transition">
+                        {{ __('shipments.edit_shipment') }}
+                    </a>
+                @endcan
                 <a href="{{ route('shipments.guide', $shipment) }}" class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition">
                     {{ __('shipments.guide_view') }}
                 </a>
@@ -47,6 +52,24 @@
                             <x-shipment-status-badge :status="$shipment->status" class="text-sm px-3 py-1" />
                         </div>
                     </div>
+                    @if ($shipment->relationLoaded('customer') && $shipment->customer)
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('shipments.customer_linked') }}</p>
+                            @can('view', $shipment->customer)
+                                <p class="mt-1 font-semibold text-slate-900">
+                                    <a href="{{ route('customers.show', $shipment->customer) }}" class="text-brand-700 hover:text-brand-900">{{ $shipment->customer->name }}</a>
+                                </p>
+                            @else
+                                <p class="mt-1 font-semibold text-slate-900">{{ $shipment->customer->name }}</p>
+                            @endcan
+                        </div>
+                    @endif
+                    @if ($shipment->relationLoaded('assignedCourier') && $shipment->assignedCourier)
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('shipments.courier_assigned') }}</p>
+                            <p class="mt-1 text-slate-900">{{ $shipment->assignedCourier->name }}</p>
+                        </div>
+                    @endif
                     @if ($shipment->reference_internal)
                         <div>
                             <p class="text-xs font-medium text-slate-500">{{ __('shipments.reference_internal') }}</p>
@@ -194,6 +217,7 @@
                 </section>
             @endisset
 
+            @can('updateStatus', $shipment)
             <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                 <h3 class="font-semibold text-slate-900 mb-4">{{ __('shipments.change_status_section') }}</h3>
                 @if (count($statusOptions) > 0)
@@ -219,6 +243,7 @@
                     <p class="text-sm text-slate-600">{{ __('shipments.no_status_changes') }}</p>
                 @endif
             </section>
+            @endcan
 
             <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                 <h3 class="font-semibold text-slate-900 mb-4">{{ __('shipments.history_section') }}</h3>
@@ -240,7 +265,7 @@
                                 @foreach ($shipment->statusHistories as $entry)
                                     <tr class="hover:bg-slate-50/80">
                                         <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $entry->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</td>
-                                        <td class="px-4 py-3">{{ $entry->fromStatusLabel() ?? '—' }}</td>
+                                        <td class="px-4 py-3">{{ $entry->from_status !== null && $entry->from_status === $entry->to_status ? '—' : ($entry->fromStatusLabel() ?? '—') }}</td>
                                         <td class="px-4 py-3 font-medium text-slate-900">{{ $entry->toStatusLabel() }}</td>
                                         <td class="px-4 py-3 text-slate-600">{{ $entry->notes ?? '—' }}</td>
                                         <td class="px-4 py-3 text-slate-600">{{ $entry->changedBy?->name ?? '—' }}</td>
@@ -253,7 +278,11 @@
             </section>
 
             <div class="flex justify-start pb-8">
-                <a href="{{ route('shipments.index') }}" class="text-sm font-medium text-brand-600 hover:text-brand-800">{{ __('shipments.back_to_list') }}</a>
+                @if (auth()->user()->isMessenger())
+                    <a href="{{ route('courier.shipments.index') }}" class="text-sm font-medium text-brand-600 hover:text-brand-800">{{ __('shipments.back_to_list') }}</a>
+                @else
+                    <a href="{{ route('shipments.index') }}" class="text-sm font-medium text-brand-600 hover:text-brand-800">{{ __('shipments.back_to_list') }}</a>
+                @endif
             </div>
         </div>
     </div>

@@ -24,7 +24,7 @@ class EnsureTenantContext
         $this->tenantManager->synchronizeSessionOrganization($user);
 
         if (! $user->organizations()->exists()) {
-            abort(403, __('Tu usuario no está asociado a ninguna organización.'));
+            abort(403, __('tenant.no_organization'));
         }
 
         if ($this->tenantManager->currentOrganizationId() === null) {

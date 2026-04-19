@@ -5,19 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Shipment;
 use App\Shipments\ShipmentStatus;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
         $today = Carbon::today();
 
-        $registeredToday = Shipment::query()
+        $base = Shipment::query();
+
+        if ($request->user()->isMessenger()) {
+            $base->where('assigned_user_id', $request->user()->id);
+        }
+
+        $registeredToday = (clone $base)
             ->whereDate('created_at', $today)
             ->count();
 
-        $inTransit = Shipment::query()
+        $inTransit = (clone $base)
             ->whereIn('status', [
                 ShipmentStatus::RECEIVED,
                 ShipmentStatus::IN_TRANSIT,
@@ -25,12 +32,12 @@ class DashboardController extends Controller
             ])
             ->count();
 
-        $deliveredToday = Shipment::query()
+        $deliveredToday = (clone $base)
             ->where('status', ShipmentStatus::DELIVERED)
             ->whereDate('updated_at', $today)
             ->count();
 
-        $incidents = Shipment::query()
+        $incidents = (clone $base)
             ->where('status', ShipmentStatus::INCIDENT)
             ->count();
 
@@ -41,6 +48,7 @@ class DashboardController extends Controller
                 'delivered_today' => $deliveredToday,
                 'incidents' => $incidents,
             ],
+            'courierDashboard' => $request->user()->isMessenger(),
         ]);
     }
 }

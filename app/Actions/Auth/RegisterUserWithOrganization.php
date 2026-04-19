@@ -26,7 +26,8 @@ class RegisterUserWithOrganization
             ]);
 
             $user->organizations()->attach($organization->id, [
-                'role' => OrganizationRole::OWNER,
+                'role' => OrganizationRole::ADMIN,
+                'is_active' => true,
             ]);
 
             return $user->fresh();

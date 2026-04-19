@@ -9,8 +9,95 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <form method="POST" action="{{ route('shipments.store') }}" class="p-6 space-y-8">
+                <form method="POST" action="{{ route('shipments.store') }}" class="p-6 space-y-8" x-data="shipmentCustomerPicker()">
                     @csrf
+
+                    <fieldset class="rounded-2xl border border-slate-200 bg-slate-50/60 p-6 space-y-5 shadow-inner">
+                        <legend class="text-base font-bold text-slate-900">{{ __('shipments.customer_section') }}</legend>
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <label class="flex gap-3 items-center rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer shadow-sm">
+                                <input type="radio" name="customer_mode" value="skip" class="text-brand-600" x-model="mode" />
+                                <span class="text-sm font-medium text-slate-800">{{ __('shipments.customer_mode_skip') }}</span>
+                            </label>
+                            <label class="flex gap-3 items-center rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer shadow-sm">
+                                <input type="radio" name="customer_mode" value="existing" class="text-brand-600" x-model="mode" />
+                                <span class="text-sm font-medium text-slate-800">{{ __('shipments.customer_mode_existing') }}</span>
+                            </label>
+                            <label class="flex gap-3 items-center rounded-xl border border-slate-200 bg-white px-4 py-3 cursor-pointer shadow-sm">
+                                <input type="radio" name="customer_mode" value="new" class="text-brand-600" x-model="mode" />
+                                <span class="text-sm font-medium text-slate-800">{{ __('shipments.customer_mode_new') }}</span>
+                            </label>
+                        </div>
+
+                        <div x-show="mode === 'existing'" x-cloak class="space-y-4">
+                            <p class="text-sm text-slate-600">{{ __('shipments.customer_pick_hint') }}</p>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="search" x-model="search" @input.debounce.300ms="fetchCustomers()" placeholder="{{ __('shipments.customer_search_hint') }}" class="flex-1 rounded-xl border-slate-300 shadow-sm" />
+                                <select name="customer_id" id="customer_id_select" x-model="customerId" @change="loadAddresses()" class="rounded-xl border-slate-300 shadow-sm">
+                                    <option value="">{{ __('shipments.select_customer') }}</option>
+                                    <template x-for="c in results" :key="c.id">
+                                        <option :value="c.id" x-text="c.name + ' · ' + c.phone" :selected="String(c.id) === String(customerId)"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div x-show="addresses.length" class="space-y-2">
+                                <x-input-label for="customer_address_id" :value="__('customers.section_addresses')" />
+                                <select id="customer_address_id" name="customer_address_id" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
+                                    <option value="">{{ __('shipments.select_address_optional') }}</option>
+                                    <template x-for="a in addresses" :key="a.id">
+                                        <option :value="a.id" x-text="a.label + ' — ' + a.address_line"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div x-show="mode === 'new'" x-cloak class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <x-input-label for="new_customer_name" :value="__('customers.field_name')" />
+                                <x-text-input id="new_customer_name" name="new_customer_name" type="text" class="mt-1 block w-full rounded-xl" :value="old('new_customer_name')" />
+                                <x-input-error class="mt-2" :messages="$errors->get('new_customer_name')" />
+                            </div>
+                            <div>
+                                <x-input-label for="new_customer_phone" :value="__('customers.field_phone')" />
+                                <x-text-input id="new_customer_phone" name="new_customer_phone" type="text" class="mt-1 block w-full rounded-xl" :value="old('new_customer_phone')" />
+                                <x-input-error class="mt-2" :messages="$errors->get('new_customer_phone')" />
+                            </div>
+                            <div>
+                                <x-input-label for="new_customer_document" :value="__('customers.field_document')" />
+                                <x-text-input id="new_customer_document" name="new_customer_document" type="text" class="mt-1 block w-full rounded-xl" :value="old('new_customer_document')" />
+                            </div>
+                            <div>
+                                <x-input-label for="new_customer_email" :value="__('customers.field_email')" />
+                                <x-text-input id="new_customer_email" name="new_customer_email" type="email" class="mt-1 block w-full rounded-xl" :value="old('new_customer_email')" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <x-input-label for="new_customer_notes" :value="__('customers.field_notes')" />
+                                <textarea id="new_customer_notes" name="new_customer_notes" rows="2" class="mt-1 block w-full rounded-xl border-slate-300">{{ old('new_customer_notes') }}</textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="rounded-2xl border border-brand-100 bg-brand-50/40 p-6 space-y-4">
+                        <legend class="text-base font-bold text-slate-900">{{ __('shipments.assign_courier') }}</legend>
+                        <p class="text-sm text-slate-600">{{ __('shipments.assign_courier_hint') }}</p>
+                        <div>
+                            <x-input-label for="assigned_user_id" :value="__('shipments.assign_courier')" />
+                            <select id="assigned_user_id" name="assigned_user_id" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm @if ($messengers->isEmpty()) opacity-60 cursor-not-allowed @endif" @disabled($messengers->isEmpty())>
+                                @if ($messengers->isEmpty())
+                                    <option value="">{{ __('shipments.no_messengers_available') }}</option>
+                                @else
+                                    <option value="">{{ __('shipments.no_courier') }}</option>
+                                    @foreach ($messengers as $m)
+                                        <option value="{{ $m->id }}" @selected(old('assigned_user_id') == $m->id)>{{ $m->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @if ($messengers->isEmpty())
+                                <p class="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">{{ __('shipments.no_messengers_available') }}</p>
+                            @endif
+                            <x-input-error class="mt-2" :messages="$errors->get('assigned_user_id')" />
+                        </div>
+                    </fieldset>
 
                     <fieldset class="space-y-4">
                         <legend class="text-lg font-medium text-gray-900">{{ __('shipments.sender_section') }}</legend>
@@ -174,6 +261,38 @@
 
     @push('scripts')
         <script>
+            function shipmentCustomerPicker() {
+                return {
+                    mode: @json(old('customer_mode', isset($preCustomerId) && $preCustomerId ? 'existing' : 'skip')),
+                    search: '',
+                    customerId: @json(old('customer_id') ? (string) old('customer_id') : (isset($preCustomerId) ? (string) $preCustomerId : '')),
+                    results: @json($initialCustomers ?? []),
+                    addresses: [],
+                    async fetchCustomers() {
+                        const url = @json(route('customers.search')) + '?q=' + encodeURIComponent(this.search);
+                        const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        const data = await res.json();
+                        this.results = data.data ?? [];
+                    },
+                    async loadAddresses() {
+                        if (!this.customerId) {
+                            this.addresses = [];
+                            return;
+                        }
+                        const res = await fetch(`{{ url('/customers') }}/${this.customerId}/addresses`, {
+                            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        const data = await res.json();
+                        this.addresses = data.data ?? [];
+                    },
+                    init() {
+                        if (this.mode === 'existing' && this.customerId) {
+                            this.loadAddresses();
+                        }
+                    },
+                };
+            }
+
             document.addEventListener('DOMContentLoaded', () => {
                 const selectCityLabel = @json(__('shipments.select_city'));
 

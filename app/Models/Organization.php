@@ -31,4 +31,9 @@ class Organization extends Model
     {
         return $this->hasMany(Shipment::class);
     }
+
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
 }

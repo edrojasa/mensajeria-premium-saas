@@ -25,8 +25,22 @@
                     <a href="{{ url('/') }}#servicios" class="px-3 py-2 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition">{{ __('brand.nav_services') }}</a>
                     <a href="{{ url('/') }}#contacto" class="px-3 py-2 rounded-lg text-white/85 hover:text-white hover:bg-white/10 transition">{{ __('brand.nav_contact') }}</a>
                     @auth
-                        <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('dashboard')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('Dashboard') }}</a>
-                        <a href="{{ route('shipments.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('shipments.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.menu') }}</a>
+                        @if (Auth::user()->isMessenger())
+                            <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('dashboard')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('Dashboard') }}</a>
+                            <a href="{{ route('courier.shipments.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('courier.shipments.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.my_shipments_menu') }}</a>
+                        @else
+                            <a href="{{ route('dashboard') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('dashboard')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('Dashboard') }}</a>
+                            <a href="{{ route('shipments.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('shipments.index') || request()->routeIs('shipments.create') || request()->routeIs('shipments.edit') || request()->routeIs('shipments.show')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.menu') }}</a>
+                            @if (Auth::user()->canManageCustomers())
+                                <a href="{{ route('customers.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('customers.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.customers_menu') }}</a>
+                            @endif
+                            @if (Auth::user()->canViewOrganizationUsers())
+                                <a href="{{ route('users.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('users.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.users_menu') }}</a>
+                            @endif
+                            @if (Auth::user()->canViewAuditLogs())
+                                <a href="{{ route('logs.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('logs.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('logs.menu') }}</a>
+                            @endif
+                        @endif
                     @endauth
                 </nav>
             </div>
@@ -88,8 +102,22 @@
             <a href="{{ url('/') }}#servicios" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('brand.nav_services') }}</a>
             <a href="{{ url('/') }}#contacto" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('brand.nav_contact') }}</a>
             @auth
-                <a href="{{ route('dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('Dashboard') }}</a>
-                <a href="{{ route('shipments.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.menu') }}</a>
+                @if (Auth::user()->isMessenger())
+                    <a href="{{ route('dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('Dashboard') }}</a>
+                    <a href="{{ route('courier.shipments.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.my_shipments_menu') }}</a>
+                @else
+                    <a href="{{ route('dashboard') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('Dashboard') }}</a>
+                    <a href="{{ route('shipments.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.menu') }}</a>
+                    @if (Auth::user()->canManageCustomers())
+                        <a href="{{ route('customers.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.customers_menu') }}</a>
+                    @endif
+                    @if (Auth::user()->canViewOrganizationUsers())
+                        <a href="{{ route('users.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.users_menu') }}</a>
+                    @endif
+                    @if (Auth::user()->canViewAuditLogs())
+                        <a href="{{ route('logs.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('logs.menu') }}</a>
+                    @endif
+                @endif
                 @isset($navOrganizations)
                     @if ($navOrganizations->count() > 1)
                         <form method="POST" action="{{ route('organization.switch') }}" class="px-3 pt-2">

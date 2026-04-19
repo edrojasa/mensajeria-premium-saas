@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\Customer;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+
+final class CustomersListing
+{
+    public static function filteredQuery(Request $request): Builder
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        return Customer::query()
+            ->withCount('shipments')
+            ->when($q !== '', function (Builder $qb) use ($q): void {
+                $like = '%'.$q.'%';
+                $qb->where(function ($inner) use ($like): void {
+                    $inner->where('name', 'like', $like)
+                        ->orWhere('phone', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+                });
+            })
+            ->orderBy('name');
+    }
+}

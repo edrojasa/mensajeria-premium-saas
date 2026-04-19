@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        View::composer(['layouts.app', 'layouts.guest', 'components.marketing-layout', 'dashboard', 'profile.edit', 'shipments.show'], function ($view) {
+        View::composer(['layouts.app', 'layouts.guest', 'components.marketing-layout', 'partials.site-header', 'dashboard', 'profile.edit', 'shipments.show'], function ($view) {
             if (! Auth::check()) {
                 return;
             }
