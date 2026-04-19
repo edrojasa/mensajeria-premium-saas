@@ -1,0 +1,16 @@
+{
+    "Dashboard": "Panel",
+    "Profile": "Perfil",
+    "Log Out": "Cerrar sesión",
+    "You're logged in!": "Has iniciado sesión correctamente.",
+    "Name": "Nombre",
+    "Email": "Correo electrónico",
+    "Password": "Contraseña",
+    "Remember me": "Recordarme",
+    "Forgot your password?": "¿Olvidaste tu contraseña?",
+    "Log in": "Iniciar sesión",
+    "Register": "Registrarse",
+    "Already registered?": "¿Ya tienes cuenta?",
+    "Confirm Password": "Confirmar contraseña",
+    "Organización activa": "Organización activa"
+}
