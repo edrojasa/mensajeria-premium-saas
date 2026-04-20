@@ -11,9 +11,9 @@
             <x-auth-session-status class="mb-2" :status="session('status')" />
 
             @if (auth()->user()->canExportTenantReports())
-                <div class="flex flex-wrap gap-3 justify-end">
-                    <a href="{{ route('exports.shipments.excel', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.excel') }}</a>
-                    <a href="{{ route('exports.shipments.pdf', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.pdf') }}</a>
+                <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 justify-end items-stretch sm:items-center">
+                    <x-export-link variant="primary" href="{{ route('exports.shipments.excel', request()->query()) }}" class="w-full sm:w-auto justify-center">{{ __('exports.excel') }}</x-export-link>
+                    <x-export-link href="{{ route('exports.shipments.pdf', request()->query()) }}" class="w-full sm:w-auto justify-center">{{ __('exports.pdf') }}</x-export-link>
                 </div>
             @endif
 

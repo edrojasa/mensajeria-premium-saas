@@ -12,9 +12,9 @@
     <div class="py-10 md:py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-4 space-y-6">
             @if (auth()->user()->canExportTenantReports())
-                <div class="flex flex-wrap gap-3 justify-end">
-                    <a href="{{ route('exports.customers.excel', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.excel') }}</a>
-                    <a href="{{ route('exports.customers.pdf', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.pdf') }}</a>
+                <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 justify-end items-stretch sm:items-center">
+                    <x-export-link variant="primary" href="{{ route('exports.customers.excel', request()->query()) }}" class="w-full sm:w-auto justify-center">{{ __('exports.excel') }}</x-export-link>
+                    <x-export-link href="{{ route('exports.customers.pdf', request()->query()) }}" class="w-full sm:w-auto justify-center">{{ __('exports.pdf') }}</x-export-link>
                 </div>
             @endif
 
@@ -25,9 +25,9 @@
                         <x-input-label for="customer_q" :value="__('customers.search_placeholder')" />
                         <x-text-input id="customer_q" name="q" type="search" class="mt-2 block w-full rounded-2xl" :value="request('q')" />
                     </div>
-                    <div class="flex gap-2">
-                        <x-primary-button type="submit" class="rounded-2xl">{{ __('customers.search_submit') }}</x-primary-button>
-                        <a href="{{ route('customers.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{{ __('shipments.filter_clear') }}</a>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <x-primary-button type="submit" class="rounded-2xl min-h-[2.75rem] justify-center px-5">{{ __('customers.search_submit') }}</x-primary-button>
+                        <a href="{{ route('customers.index') }}" class="inline-flex min-h-[2.75rem] items-center justify-center whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">{{ __('shipments.filter_clear') }}</a>
                     </div>
                 </form>
             </div>

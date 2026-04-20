@@ -5,3 +5,43 @@
 [x-cloak] {
     display: none !important;
 }
+
+/*
+ * Cabecera marketing / app: el body usa text-slate-900 y a veces los enlaces quedan oscuros
+ * hasta :hover. Forzamos texto claro solo en la barra y menú móvil (no en paneles dropdown blancos).
+ */
+@layer components {
+    .site-header nav > a {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .site-header nav > a:hover {
+        color: #ffffff !important;
+    }
+
+    .site-header button.site-header__trigger {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .site-header button.site-header__trigger:hover {
+        color: #ffffff !important;
+    }
+
+    .site-header__mobile a,
+    .site-header__mobile button {
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .site-header__mobile a:hover,
+    .site-header__mobile button:hover {
+        color: #ffffff !important;
+    }
+
+    .site-header a.site-header__login {
+        color: rgb(30 64 175) !important;
+    }
+
+    .site-header a.site-header__login:hover {
+        color: rgb(29 78 216) !important;
+    }
+}

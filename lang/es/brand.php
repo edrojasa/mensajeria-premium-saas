@@ -10,6 +10,7 @@ return [
     'nav_services' => 'Servicios',
     'nav_contact' => 'Contacto',
     'nav_login' => 'Iniciar sesión',
+    'nav_operations' => 'Operación',
 
     'hero_title' => 'Soluciones de mensajería profesional',
     'hero_subtitle' => 'Plataforma para empresas de transporte y mensajería: guías, seguimiento público y control operativo con identidad de marca.',
