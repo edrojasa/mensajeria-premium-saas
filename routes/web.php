@@ -1,15 +1,18 @@
 <?php
 
+use App\Http\Controllers\AccountsReceivableController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\CourierShipmentController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DataExportController;
+use App\Http\Controllers\FinancialReportsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationSwitcherController;
 use App\Http\Controllers\OrganizationUserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\PublicTrackingController;
+use App\Http\Controllers\ServiceRateController;
 use App\Http\Controllers\ShipmentController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,10 +53,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
             ->name('exports.users.excel');
         Route::get('/users/pdf', [DataExportController::class, 'usersPdf'])
             ->name('exports.users.pdf');
-        Route::get('/messengers/excel', [DataExportController::class, 'messengersExcel'])
-            ->name('exports.messengers.excel');
-        Route::get('/messengers/pdf', [DataExportController::class, 'messengersPdf'])
-            ->name('exports.messengers.pdf');
+        Route::get('/logs/excel', [DataExportController::class, 'logsExcel'])
+            ->name('exports.logs.excel');
+        Route::get('/logs/pdf', [DataExportController::class, 'logsPdf'])
+            ->name('exports.logs.pdf');
     });
 
     Route::get('/geo/cities', [GeoController::class, 'citiesByDepartment'])
@@ -84,6 +87,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::post('/shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])
         ->name('shipments.status.update');
+
+    Route::patch('/shipments/{shipment}/payment', [ShipmentController::class, 'updatePayment'])
+        ->name('shipments.payment.update');
+
+    Route::get('/financial-reports', FinancialReportsController::class)
+        ->name('financial.reports');
+
+    Route::get('/financial/receivables', AccountsReceivableController::class)
+        ->name('financial.receivables');
+
+    Route::resource('service-rates', ServiceRateController::class)->except(['show']);
 
     Route::resource('shipments', ShipmentController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update']);
 

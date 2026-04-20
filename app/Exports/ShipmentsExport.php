@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Finance\PaymentStatus;
+use App\Finance\PaymentType;
 use App\Shipments\ShipmentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -23,6 +25,7 @@ class ShipmentsExport implements FromQuery, WithHeadings, WithMapping
     {
         return [
             __('exports.shipments_col_tracking'),
+            __('exports.shipments_col_customer_code'),
             __('exports.shipments_col_customer'),
             __('exports.shipments_col_recipient'),
             __('exports.shipments_col_dest_address'),
@@ -32,6 +35,9 @@ class ShipmentsExport implements FromQuery, WithHeadings, WithMapping
             __('exports.shipments_col_messenger'),
             __('exports.shipments_col_created'),
             __('exports.shipments_col_delivered'),
+            __('exports.shipments_col_cost'),
+            __('exports.shipments_col_payment_type'),
+            __('exports.shipments_col_payment_status'),
         ];
     }
 
@@ -45,6 +51,7 @@ class ShipmentsExport implements FromQuery, WithHeadings, WithMapping
 
         return [
             $shipment->tracking_number,
+            $shipment->customer?->customer_code ?? '—',
             $shipment->customer?->name ?? '—',
             $shipment->recipient_name,
             $shipment->destination_address_line,
@@ -56,6 +63,9 @@ class ShipmentsExport implements FromQuery, WithHeadings, WithMapping
             $deliveredAt
                 ? \Carbon\Carbon::parse($deliveredAt)->timezone(config('app.timezone'))->format('d/m/Y H:i')
                 : '—',
+            $shipment->cost !== null ? number_format((float) $shipment->cost, 2, ',', '.') : '—',
+            $shipment->payment_type ? PaymentType::label($shipment->payment_type) : '—',
+            $shipment->payment_status ? PaymentStatus::label($shipment->payment_status) : '—',
         ];
     }
 }

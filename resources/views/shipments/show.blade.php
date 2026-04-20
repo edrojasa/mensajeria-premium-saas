@@ -91,6 +91,78 @@
                 </div>
             </section>
 
+            @if (auth()->user()->canAccessFinancialModule())
+                <section class="rounded-2xl border border-emerald-100 bg-emerald-50/40 shadow-sm overflow-hidden">
+                    <div class="border-b border-emerald-100 bg-white/80 px-6 py-4">
+                        <h3 class="text-sm font-semibold uppercase tracking-wide text-emerald-900">{{ __('finance.section_shipment_finance') }}</h3>
+                    </div>
+                    <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('finance.field_service_type') }}</p>
+                            <p class="mt-1 font-semibold text-slate-900">{{ $shipment->service_type ? \App\Finance\ServiceType::label($shipment->service_type) : '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('finance.field_distance_km') }}</p>
+                            <p class="mt-1 text-slate-900">{{ $shipment->distance_km ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('finance.cost_calculated') }}</p>
+                            <p class="mt-1 text-xl font-bold text-emerald-800">{{ $shipment->cost !== null ? '$'.number_format((float) $shipment->cost, 2, ',', '.') : '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('finance.field_payment_type') }}</p>
+                            <p class="mt-1 font-semibold text-slate-900">{{ $shipment->payment_type ? \App\Finance\PaymentType::label($shipment->payment_type) : '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium text-slate-500">{{ __('finance.field_payment_status') }}</p>
+                            <p class="mt-1"><span class="inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $shipment->payment_status === \App\Finance\PaymentStatus::PAID ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900' }}">{{ $shipment->payment_status ? \App\Finance\PaymentStatus::label($shipment->payment_status) : '—' }}</span></p>
+                        </div>
+                        @if ($shipment->paid_amount !== null)
+                            <div>
+                                <p class="text-xs font-medium text-slate-500">{{ __('finance.field_paid_amount') }}</p>
+                                <p class="mt-1 font-semibold text-slate-900">${{ number_format((float) $shipment->paid_amount, 2, ',', '.') }}</p>
+                            </div>
+                        @endif
+                        @if ($shipment->payment_date)
+                            <div>
+                                <p class="text-xs font-medium text-slate-500">{{ __('finance.field_payment_date') }}</p>
+                                <p class="mt-1 text-slate-900">{{ $shipment->payment_date->timezone(config('app.timezone'))->format('d/m/Y') }}</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="border-t border-emerald-100 px-6 py-5 bg-white">
+                        <h4 class="text-xs font-bold uppercase tracking-wide text-slate-600">{{ __('finance.payment_section') }}</h4>
+                        <form method="POST" action="{{ route('shipments.payment.update', $shipment) }}" class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            @csrf
+                            @method('PATCH')
+                            <div class="md:col-span-3">
+                                <x-input-label for="payment_status" :value="__('finance.field_payment_status')" />
+                                <select id="payment_status" name="payment_status" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
+                                    @foreach (\App\Finance\PaymentStatus::all() as $ps)
+                                        <option value="{{ $ps }}" @selected(old('payment_status', $shipment->payment_status) === $ps)>{{ \App\Finance\PaymentStatus::label($ps) }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('payment_status')" class="mt-2" />
+                            </div>
+                            <div class="md:col-span-3">
+                                <x-input-label for="paid_amount" :value="__('finance.field_paid_amount')" />
+                                <x-text-input id="paid_amount" name="paid_amount" type="number" step="0.01" min="0" class="mt-1 block w-full rounded-xl" :value="old('paid_amount', $shipment->paid_amount)" />
+                                <x-input-error :messages="$errors->get('paid_amount')" class="mt-2" />
+                            </div>
+                            <div class="md:col-span-3">
+                                <x-input-label for="payment_date" :value="__('finance.field_payment_date')" />
+                                <x-text-input id="payment_date" name="payment_date" type="date" class="mt-1 block w-full rounded-xl" :value="old('payment_date', $shipment->payment_date?->format('Y-m-d'))" />
+                                <x-input-error :messages="$errors->get('payment_date')" class="mt-2" />
+                            </div>
+                            <div class="md:col-span-3">
+                                <x-primary-button type="submit" class="w-full md:w-auto rounded-2xl">{{ __('finance.record_payment') }}</x-primary-button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            @endif
+
             {{-- Timeline --}}
             <section class="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-6 md:p-8">
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">

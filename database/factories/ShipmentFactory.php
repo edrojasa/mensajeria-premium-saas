@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Finance\PaymentStatus;
+use App\Finance\PaymentType;
+use App\Finance\ServiceType;
 use App\Models\City;
 use App\Models\Organization;
 use App\Models\Shipment;
@@ -45,6 +48,13 @@ class ShipmentFactory extends Factory
             'notes_internal' => null,
             'weight_kg' => null,
             'declared_value' => null,
+            'service_type' => ServiceType::STANDARD,
+            'distance_km' => null,
+            'cost' => null,
+            'payment_type' => PaymentType::CREDIT,
+            'payment_status' => PaymentStatus::PENDING,
+            'paid_amount' => null,
+            'payment_date' => null,
             'status' => ShipmentStatus::RECEIVED,
             'created_by_user_id' => null,
         ];

@@ -21,6 +21,23 @@ class Customer extends Model
         'notes',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Customer $customer): void {
+            if ($customer->customer_code !== null && $customer->customer_code !== '') {
+                return;
+            }
+
+            $orgId = $customer->organization_id ?? tenant_id();
+            if ($orgId === null) {
+                return;
+            }
+
+            $customer->customer_code = app(\App\Support\CustomerCodeGenerator::class)
+                ->generate((int) $orgId);
+        });
+    }
+
     public function addresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class);

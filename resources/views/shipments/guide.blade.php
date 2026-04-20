@@ -18,17 +18,21 @@
             <article class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden print:shadow-none print:border-slate-300">
                 <div class="bg-gradient-to-r from-brand-700 to-brand-600 px-6 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                     <div class="flex items-center gap-4">
-                        <div class="bg-white/15 rounded-xl p-2">
-                            <svg viewBox="0 0 48 48" class="h-12 w-12" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="gdg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stop-color="#fff" stop-opacity="0.95"/>
-                                        <stop offset="100%" stop-color="#fff" stop-opacity="0.75"/>
-                                    </linearGradient>
-                                </defs>
-                                <rect width="48" height="48" rx="12" fill="url(#gdg)"/>
-                                <text x="24" y="31" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="700" fill="#1e40af">MP</text>
-                            </svg>
+                        <div class="bg-white/15 rounded-xl p-2 flex items-center justify-center">
+                            @if (brand_logo_asset())
+                                <img src="{{ brand_logo_asset() }}" alt="" class="h-12 w-auto max-w-[10rem] object-contain" />
+                            @else
+                                <svg viewBox="0 0 48 48" class="h-12 w-12" aria-hidden="true">
+                                    <defs>
+                                        <linearGradient id="gdg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#fff" stop-opacity="0.95"/>
+                                            <stop offset="100%" stop-color="#fff" stop-opacity="0.75"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect width="48" height="48" rx="12" fill="url(#gdg)"/>
+                                    <text x="24" y="31" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="700" fill="#1e40af">MP</text>
+                                </svg>
+                            @endif
                         </div>
                         <div>
                             <p class="text-white/90 text-sm font-medium">{{ __('brand.name') }}</p>

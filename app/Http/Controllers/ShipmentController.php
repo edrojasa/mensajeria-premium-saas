@@ -3,7 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditActions;
+use App\Finance\PaymentStatus;
+use App\Finance\PaymentType;
+use App\Finance\ServiceType;
+use App\Finance\ShipmentCostCalculator;
 use App\Http\Requests\StoreShipmentRequest;
+use App\Http\Requests\UpdateShipmentPaymentRequest;
 use App\Http\Requests\UpdateShipmentRequest;
 use App\Http\Requests\UpdateShipmentStatusRequest;
 use App\Http\Middleware\RedirectCourierFromStaffShipmentRoutes;
@@ -11,6 +16,7 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\Department;
+use App\Models\ServiceRate;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Organizations\OrganizationRole;
@@ -66,7 +72,7 @@ class ShipmentController extends Controller
         $initialCustomers = Customer::query()
             ->orderBy('name')
             ->limit(40)
-            ->get(['id', 'name', 'phone', 'email']);
+            ->get(['id', 'customer_code', 'name', 'phone', 'email']);
 
         $preCustomerId = $request->query('customer_id');
         if ($preCustomerId && ! $initialCustomers->contains('id', (int) $preCustomerId)) {
@@ -109,6 +115,13 @@ class ShipmentController extends Controller
             }
 
             $attrs = $this->attributesFromShipmentForm($validated);
+            $attrs['cost'] = $this->resolveShipmentCost(
+                $tenantId,
+                $attrs['service_type'] ?? ServiceType::STANDARD,
+                $attrs['weight_kg'] ?? null,
+                $attrs['distance_km'] ?? null
+            );
+            $attrs['payment_status'] = PaymentStatus::PENDING;
 
             $shipment = new Shipment($attrs);
             $shipment->tracking_number = $trackingNumberGenerator->generate($tenantId);
@@ -146,7 +159,7 @@ class ShipmentController extends Controller
         $initialCustomers = Customer::query()
             ->orderBy('name')
             ->limit(40)
-            ->get(['id', 'name', 'phone', 'email']);
+            ->get(['id', 'customer_code', 'name', 'phone', 'email']);
 
         if ($shipment->customer_id && ! $initialCustomers->contains('id', $shipment->customer_id)) {
             $extra = Customer::query()->find($shipment->customer_id);
@@ -183,6 +196,12 @@ class ShipmentController extends Controller
             }
 
             $attrs = $this->attributesFromShipmentForm($validated);
+            $attrs['cost'] = $this->resolveShipmentCost(
+                (int) $shipment->organization_id,
+                $attrs['service_type'] ?? ServiceType::STANDARD,
+                $attrs['weight_kg'] ?? null,
+                $attrs['distance_km'] ?? null
+            );
 
             $shipment->fill($attrs);
             $shipment->save();
@@ -463,7 +482,58 @@ class ShipmentController extends Controller
             'notes_internal' => $validated['notes_internal'] ?? null,
             'weight_kg' => $validated['weight_kg'] ?? null,
             'declared_value' => $validated['declared_value'] ?? null,
+            'service_type' => $validated['service_type'] ?? ServiceType::STANDARD,
+            'distance_km' => $validated['distance_km'] ?? null,
+            'payment_type' => $validated['payment_type'] ?? PaymentType::CREDIT,
         ];
+    }
+
+    public function updatePayment(
+        UpdateShipmentPaymentRequest $request,
+        Shipment $shipment
+    ): RedirectResponse {
+        $this->authorize('updatePayment', $shipment);
+
+        $validated = $request->validated();
+        $status = $validated['payment_status'];
+
+        $shipment->payment_status = $status;
+
+        if ($status === PaymentStatus::PAID) {
+            $amount = $validated['paid_amount'] ?? null;
+            $shipment->paid_amount = $amount !== null && $amount !== ''
+                ? $amount
+                : ($shipment->cost ?? 0);
+            $shipment->payment_date = isset($validated['payment_date'])
+                ? \Carbon\Carbon::parse($validated['payment_date'])->startOfDay()
+                : now()->startOfDay();
+        } else {
+            $shipment->paid_amount = $validated['paid_amount'] ?? null;
+            $shipment->payment_date = isset($validated['payment_date'])
+                ? \Carbon\Carbon::parse($validated['payment_date'])->startOfDay()
+                : null;
+        }
+
+        $shipment->save();
+
+        return redirect()
+            ->route('shipments.show', $shipment)
+            ->with('status', __('finance.payment_updated'));
+    }
+
+    private function resolveShipmentCost(
+        int $organizationId,
+        string $serviceType,
+        mixed $weightKg,
+        mixed $distanceKm
+    ): ?float {
+        $rate = ServiceRate::query()
+            ->where('organization_id', $organizationId)
+            ->where('service_type', $serviceType)
+            ->where('active', true)
+            ->first();
+
+        return app(ShipmentCostCalculator::class)->calculate($rate, $weightKg, $distanceKm);
     }
 
     public function updateStatus(

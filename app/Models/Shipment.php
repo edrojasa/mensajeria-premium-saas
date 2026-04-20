@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
+use App\Finance\PaymentStatus;
 use App\Shipments\ShipmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,7 +51,23 @@ class Shipment extends Model
     protected $casts = [
         'weight_kg' => 'decimal:3',
         'declared_value' => 'decimal:2',
+        'distance_km' => 'decimal:3',
+        'cost' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'payment_date' => 'date',
     ];
+
+    public function balanceDue(): float
+    {
+        if ($this->payment_status === PaymentStatus::PAID) {
+            return 0.0;
+        }
+
+        $cost = (float) ($this->cost ?? 0);
+        $paid = (float) ($this->paid_amount ?? 0);
+
+        return max(0.0, round($cost - $paid, 2));
+    }
 
     public function creator(): BelongsTo
     {

@@ -16,4 +16,5 @@ return [
     'filter_all_users' => 'Todos los usuarios',
     'filter_all_actions' => 'Todas las acciones',
     'empty' => 'No hay registros con los filtros seleccionados.',
+    'export_hint' => 'Las exportaciones respetan los filtros activos de esta página.',
 ];

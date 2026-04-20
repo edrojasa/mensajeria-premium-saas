@@ -38,6 +38,7 @@
                         <thead>
                             <tr class="bg-gradient-to-r from-slate-100 to-slate-50">
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_name') }}</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_customer_code') }}</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_phone') }}</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_email') }}</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.shipments_count') }}</th>
@@ -48,6 +49,7 @@
                             @forelse ($customers as $customer)
                                 <tr class="hover:bg-brand-50/40">
                                     <td class="px-6 py-4 font-semibold text-slate-900">{{ $customer->name }}</td>
+                                    <td class="px-6 py-4 font-mono text-sm text-slate-800">{{ $customer->customer_code }}</td>
                                     <td class="px-6 py-4 text-slate-700">{{ $customer->phone }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $customer->email ?? '—' }}</td>
                                     <td class="px-6 py-4"><span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800">{{ $customer->shipments_count }}</span></td>
@@ -57,7 +59,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-14 text-center text-slate-600">{{ __('customers.empty_index') }}</td>
+                                    <td colspan="6" class="px-6 py-14 text-center text-slate-600">{{ __('customers.empty_index') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

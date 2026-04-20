@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\ActivityLogsListing;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -29,14 +30,7 @@ class ActivityLogController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $logs = ActivityLog::query()
-            ->where('organization_id', $orgId)
-            ->with('user')
-            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
-            ->when($request->filled('action'), fn ($q) => $q->where('action', $request->query('action')))
-            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->query('date_from')))
-            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('created_at', '<=', $request->query('date_to')))
-            ->latest('created_at')
+        $logs = ActivityLogsListing::filteredQuery($request)
             ->paginate(30)
             ->withQueryString();
 

@@ -217,9 +217,9 @@ class ShipmentTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee(__('dashboard.metric_registered_today'), false)
+            ->assertSee(__('dashboard.metric_shipments_today'), false)
             ->assertSee(__('dashboard.metric_in_transit'), false)
-            ->assertSee(__('dashboard.metric_delivered_today'), false)
+            ->assertSee(__('dashboard.metric_delivered_total'), false)
             ->assertSee(__('dashboard.metric_incidents'), false);
     }
 

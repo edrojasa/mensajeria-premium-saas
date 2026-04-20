@@ -19,7 +19,8 @@ final class CustomersListing
                 $qb->where(function ($inner) use ($like): void {
                     $inner->where('name', 'like', $like)
                         ->orWhere('phone', 'like', $like)
-                        ->orWhere('email', 'like', $like);
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('customer_code', 'like', $like);
                 });
             })
             ->orderBy('name');

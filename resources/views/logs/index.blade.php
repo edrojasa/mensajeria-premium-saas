@@ -8,6 +8,13 @@
 
     <div class="py-10 md:py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl ring-1 ring-slate-900/5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <p class="text-sm text-slate-600">{{ __('logs.export_hint') }}</p>
+                <div class="flex flex-wrap gap-2 shrink-0">
+                    <a href="{{ route('exports.logs.excel', request()->query()) }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow hover:bg-emerald-800">{{ __('exports.excel') }}</a>
+                    <a href="{{ route('exports.logs.pdf', request()->query()) }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50">{{ __('exports.pdf') }}</a>
+                </div>
+            </div>
             <form method="GET" action="{{ route('logs.index') }}" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 lg:items-end">
                 <div>
                     <x-input-label for="log_user" :value="__('logs.filter_user')" />
@@ -57,7 +64,7 @@
                             <tr class="hover:bg-brand-50/40">
                                 <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $log->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i:s') }}</td>
                                 <td class="px-4 py-3 text-slate-900 font-medium">{{ $log->user?->name ?? '—' }}</td>
-                                <td class="px-4 py-3 font-mono text-xs text-brand-800">{{ $log->action }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-800">{{ \App\Support\AuditActionPresenter::label($log->action) }}</td>
                                 <td class="px-4 py-3 text-slate-700">{{ $log->description ?? '—' }}</td>
                             </tr>
                         @empty

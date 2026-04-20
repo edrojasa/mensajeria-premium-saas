@@ -128,6 +128,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Finanzas: tarifas, cartera, reportes y pagos en envíos (admin u operador; no mensajeros).
+     */
+    public function canAccessFinancialModule(): bool
+    {
+        if (! $this->isActiveInCurrentOrganization()) {
+            return false;
+        }
+
+        return in_array((string) $this->roleInCurrentOrganization(), [
+            OrganizationRole::ADMIN,
+            OrganizationRole::OPERADOR,
+            'owner',
+        ], true);
+    }
+
+    /**
      * Visor de auditoría / logs de actividad (solo administrador).
      */
     public function canViewAuditLogs(): bool

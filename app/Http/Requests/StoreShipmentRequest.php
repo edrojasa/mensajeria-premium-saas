@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Finance\PaymentType;
+use App\Finance\ServiceType;
 use App\Models\CustomerAddress;
 use App\Organizations\OrganizationRole;
 use Illuminate\Foundation\Http\FormRequest;
@@ -85,6 +87,10 @@ class StoreShipmentRequest extends FormRequest
             'notes_internal' => ['nullable', 'string', 'max:5000'],
             'weight_kg' => ['nullable', 'numeric', 'min:0', 'max:999999'],
             'declared_value' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
+
+            'service_type' => ['nullable', 'string', Rule::in(ServiceType::all())],
+            'distance_km' => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'payment_type' => ['nullable', 'string', Rule::in(PaymentType::all())],
         ];
     }
 

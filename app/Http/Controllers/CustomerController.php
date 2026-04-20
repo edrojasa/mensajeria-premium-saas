@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditActions;
+use App\Finance\PaymentStatus;
 use App\Models\City;
 use App\Models\Customer;
 use App\Models\Department;
@@ -35,12 +36,13 @@ class CustomerController extends Controller
                 $qb->where(function ($inner) use ($q) {
                     $inner->where('name', 'like', '%'.$q.'%')
                         ->orWhere('phone', 'like', '%'.$q.'%')
-                        ->orWhere('email', 'like', '%'.$q.'%');
+                        ->orWhere('email', 'like', '%'.$q.'%')
+                        ->orWhere('customer_code', 'like', '%'.$q.'%');
                 });
             })
             ->orderBy('name')
             ->limit(30)
-            ->get(['id', 'name', 'phone', 'email']);
+            ->get(['id', 'customer_code', 'name', 'phone', 'email']);
 
         return response()->json(['data' => $customers]);
     }
@@ -118,7 +120,7 @@ class CustomerController extends Controller
             ->with('status', __('customers.saved'));
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
         $this->authorize('view', $customer);
 
@@ -126,12 +128,38 @@ class CustomerController extends Controller
             'addresses' => fn ($q) => $q->orderByDesc('is_default')->orderBy('label'),
         ]);
 
+        $canFinance = $request->user()->canAccessFinancialModule();
+        $activeTab = ($canFinance && $request->query('tab') === 'financial') ? 'financial' : 'shipments';
+
         $shipments = Shipment::query()
             ->where('customer_id', $customer->id)
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('customers.show', compact('customer', 'shipments'));
+        $financialBilled = Shipment::query()
+            ->where('customer_id', $customer->id)
+            ->sum('cost');
+
+        $financialPaid = Shipment::query()
+            ->where('customer_id', $customer->id)
+            ->where('payment_status', PaymentStatus::PAID)
+            ->sum('paid_amount');
+
+        $financialBalance = Shipment::query()
+            ->where('customer_id', $customer->id)
+            ->get()
+            ->sum(fn (Shipment $s) => $s->balanceDue());
+
+        return view('customers.show', compact(
+            'customer',
+            'shipments',
+            'financialBilled',
+            'financialPaid',
+            'financialBalance',
+            'activeTab',
+            'canFinance'
+        ));
     }
 
     public function edit(Customer $customer): View

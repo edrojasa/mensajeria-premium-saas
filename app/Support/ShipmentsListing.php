@@ -22,7 +22,7 @@ final class ShipmentsListing
             ->groupBy('shipment_id');
 
         $query = Shipment::query()
-            ->with(['customer:id,name', 'assignedCourier:id,name'])
+            ->with(['customer:id,customer_code,name', 'assignedCourier:id,name'])
             ->leftJoinSub($deliveredSub, 'delivered_hist', function ($join): void {
                 $join->on('shipments.id', '=', 'delivered_hist.shipment_id');
             })

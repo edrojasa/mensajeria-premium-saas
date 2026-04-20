@@ -30,6 +30,9 @@
         <table width="100%" cellspacing="0">
             <tr>
                 <td>
+                    @if (brand_logo_can_embed_in_pdf())
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(brand_logo_public_path())) }}" alt="" style="max-height: 40px; width: auto; display: block; margin-bottom: 8px;" />
+                    @endif
                     <p class="brand">{{ __('brand.name') }}</p>
                     <p class="org">{{ $shipment->organization->name }}</p>
                 </td>

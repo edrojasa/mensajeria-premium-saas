@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\CustomersExport;
+use App\Exports\ActivityLogsExport;
+use App\Exports\CustomersDetailedExport;
 use App\Exports\OrganizationUsersExport;
 use App\Exports\ShipmentsExport;
+use App\Support\ActivityLogsListing;
 use App\Support\CustomersListing;
+use App\Support\CustomersWithShipmentsExportBuilder;
 use App\Support\OrganizationUsersListing;
 use App\Support\ShipmentsListing;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -48,9 +51,10 @@ class DataExportController extends Controller
         $this->authorizeExport($request);
 
         $query = CustomersListing::filteredQuery($request);
+        $rows = CustomersWithShipmentsExportBuilder::rowsForListingQuery($query);
 
         return Excel::download(
-            new CustomersExport($query),
+            new CustomersDetailedExport($rows),
             'clientes-'.now()->format('Y-m-d_His').'.xlsx'
         );
     }
@@ -59,13 +63,18 @@ class DataExportController extends Controller
     {
         $this->authorizeExport($request);
 
-        $rows = CustomersListing::filteredQuery($request)->get();
+        $customers = CustomersListing::filteredQuery($request)
+            ->with([
+                'shipments' => fn ($q) => $q->with('assignedCourier')->latest(),
+            ])
+            ->orderBy('name')
+            ->get();
 
-        $pdf = Pdf::loadView('exports.pdf.customers', [
-            'rows' => $rows,
+        $pdf = Pdf::loadView('exports.pdf.customers-detailed', [
+            'customers' => $customers,
             'title' => __('exports.pdf_customers_title'),
             'generatedAt' => now()->timezone(config('app.timezone')),
-        ])->setPaper('a4', 'portrait');
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('clientes-'.now()->format('Y-m-d_His').'.pdf');
     }
@@ -100,34 +109,39 @@ class DataExportController extends Controller
         return $pdf->download('usuarios-'.now()->format('Y-m-d_His').'.pdf');
     }
 
-    public function messengersExcel(Request $request): BinaryFileResponse
+    public function logsExcel(Request $request): BinaryFileResponse
     {
-        $this->authorizeExport($request);
+        $this->authorizeAuditLogsExport($request);
 
-        $orgId = $this->tenantOrganizationId();
-        $query = OrganizationUsersListing::messengersQuery($request, $orgId);
+        $query = ActivityLogsListing::filteredQuery($request);
 
         return Excel::download(
-            new OrganizationUsersExport($query, $orgId),
-            'mensajeros-'.now()->format('Y-m-d_His').'.xlsx'
+            new ActivityLogsExport($query),
+            'auditoria-'.now()->format('Y-m-d_His').'.xlsx'
         );
     }
 
-    public function messengersPdf(Request $request): Response
+    public function logsPdf(Request $request): Response
     {
-        $this->authorizeExport($request);
+        $this->authorizeAuditLogsExport($request);
 
-        $orgId = $this->tenantOrganizationId();
-        $rows = OrganizationUsersListing::messengersQuery($request, $orgId)->get();
+        $rows = ActivityLogsListing::filteredQuery($request)->get();
 
-        $pdf = Pdf::loadView('exports.pdf.users', [
+        $pdf = Pdf::loadView('exports.pdf.activity-logs', [
             'rows' => $rows,
-            'organizationId' => $orgId,
-            'title' => __('exports.pdf_messengers_title'),
+            'title' => __('exports.pdf_logs_title'),
             'generatedAt' => now()->timezone(config('app.timezone')),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('mensajeros-'.now()->format('Y-m-d_His').'.pdf');
+        return $pdf->download('auditoria-'.now()->format('Y-m-d_His').'.pdf');
+    }
+
+    private function authorizeAuditLogsExport(Request $request): void
+    {
+        abort_unless($request->user()?->canViewAuditLogs(), 403);
+        if (tenant_id() === null) {
+            abort(403);
+        }
     }
 
     private function authorizeExport(Request $request): void

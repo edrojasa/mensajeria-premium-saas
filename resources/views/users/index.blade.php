@@ -20,8 +20,6 @@
             <div class="flex flex-wrap gap-3 justify-end">
                 <a href="{{ route('exports.users.excel', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.excel') }}</a>
                 <a href="{{ route('exports.users.pdf', request()->query()) }}" class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50">{{ __('exports.pdf') }}</a>
-                <a href="{{ route('exports.messengers.excel', request()->query()) }}" class="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-brand-700">{{ __('exports.messengers_excel') }}</a>
-                <a href="{{ route('exports.messengers.pdf', request()->query()) }}" class="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-md hover:bg-slate-800">{{ __('exports.messengers_pdf') }}</a>
             </div>
         @endif
 

@@ -36,7 +36,7 @@
                                 <select name="customer_id" id="customer_id_select" x-model="customerId" @change="loadAddresses()" class="rounded-xl border-slate-300 shadow-sm">
                                     <option value="">{{ __('shipments.select_customer') }}</option>
                                     <template x-for="c in results" :key="c.id">
-                                        <option :value="c.id" x-text="c.name + ' · ' + c.phone" :selected="String(c.id) === String(customerId)"></option>
+                                        <option :value="c.id" x-text="(c.customer_code ? '[' + c.customer_code + '] ' : '') + c.name + ' · ' + c.phone" :selected="String(c.id) === String(customerId)"></option>
                                     </template>
                                 </select>
                             </div>
@@ -222,6 +222,36 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('destination_postal_code')" />
                             </div>
                         </div>
+                    </fieldset>
+
+                    <fieldset class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-6 space-y-4">
+                        <legend class="text-base font-bold text-slate-900">{{ __('finance.section_shipment_finance') }}</legend>
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div>
+                                <x-input-label for="service_type" :value="__('finance.field_service_type')" />
+                                <select id="service_type" name="service_type" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
+                                    @foreach (\App\Finance\ServiceType::all() as $st)
+                                        <option value="{{ $st }}" @selected(old('service_type', \App\Finance\ServiceType::STANDARD) === $st)>{{ \App\Finance\ServiceType::label($st) }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error class="mt-2" :messages="$errors->get('service_type')" />
+                            </div>
+                            <div>
+                                <x-input-label for="distance_km" :value="__('finance.field_distance_km') . ' (' . __('shipments.section_optional') . ')'" />
+                                <x-text-input id="distance_km" name="distance_km" type="number" step="0.001" min="0" class="mt-1 block w-full rounded-xl" :value="old('distance_km')" placeholder="km" />
+                                <x-input-error class="mt-2" :messages="$errors->get('distance_km')" />
+                            </div>
+                            <div>
+                                <x-input-label for="payment_type" :value="__('finance.field_payment_type')" />
+                                <select id="payment_type" name="payment_type" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
+                                    @foreach (\App\Finance\PaymentType::all() as $pt)
+                                        <option value="{{ $pt }}" @selected(old('payment_type', \App\Finance\PaymentType::CREDIT) === $pt)>{{ \App\Finance\PaymentType::label($pt) }}</option>
+                                    @endforeach
+                                </select>
+                                <x-input-error class="mt-2" :messages="$errors->get('payment_type')" />
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-600">{{ __('finance.cost_missing_rate') }}</p>
                     </fieldset>
 
                     <fieldset class="space-y-4">

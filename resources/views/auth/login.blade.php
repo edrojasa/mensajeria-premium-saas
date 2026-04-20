@@ -1,7 +1,13 @@
 <x-auth-layout>
     <div class="rounded-3xl bg-white p-9 sm:p-11 shadow-2xl shadow-black/40 border border-white/60 ring-1 ring-slate-900/5">
         <div class="text-center mb-10">
-            <p class="text-xs font-bold uppercase tracking-widest text-brand-600 mb-3">{{ __('brand.name') }}</p>
+            @if (brand_logo_asset())
+                <div class="flex justify-center mb-5 group">
+                    <img src="{{ brand_logo_asset() }}" alt="{{ __('brand.name') }}" class="h-8 w-auto max-w-[12rem] object-contain mx-auto transition duration-300 ease-out group-hover:scale-105 group-hover:drop-shadow-[0_4px_18px_rgba(37,99,235,0.45)]" />
+                </div>
+            @else
+                <p class="text-xs font-bold uppercase tracking-widest text-brand-600 mb-3">{{ __('brand.name') }}</p>
+            @endif
             <h1 class="font-display text-4xl sm:text-[2.75rem] font-extrabold text-slate-900 tracking-tight leading-tight">
                 {{ __('auth.login_heading') }}
             </h1>

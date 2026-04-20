@@ -66,4 +66,10 @@ class ShipmentPolicy
     {
         return $this->view($user, $shipment);
     }
+
+    public function updatePayment(User $user, Shipment $shipment): bool
+    {
+        return $user->belongsToOrganization($shipment->organization_id)
+            && $user->canAccessFinancialModule();
+    }
 }

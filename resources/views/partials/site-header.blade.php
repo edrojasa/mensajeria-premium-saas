@@ -34,6 +34,26 @@
                             @if (Auth::user()->canManageCustomers())
                                 <a href="{{ route('customers.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('customers.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.customers_menu') }}</a>
                             @endif
+                            @if (Auth::user()->canAccessFinancialModule())
+                                @php
+                                    $financeNavActive = request()->routeIs('financial.reports', 'financial.receivables', 'service-rates.*');
+                                @endphp
+                                <div class="hidden md:block">
+                                    <x-dropdown align="left" width="56">
+                                        <x-slot name="trigger">
+                                            <button type="button" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold transition {{ $financeNavActive ? 'text-white bg-white/15 shadow-inner' : 'text-white/85 hover:text-white hover:bg-white/10' }}">
+                                                {{ __('finance.menu_main') }}
+                                                <svg class="h-4 w-4 opacity-80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                                            </button>
+                                        </x-slot>
+                                        <x-slot name="content">
+                                            <x-dropdown-link href="{{ route('financial.receivables') }}">{{ __('finance.menu_receivables') }}</x-dropdown-link>
+                                            <x-dropdown-link href="{{ route('service-rates.index') }}">{{ __('finance.menu_rates') }}</x-dropdown-link>
+                                            <x-dropdown-link href="{{ route('financial.reports') }}">{{ __('finance.menu_reports') }}</x-dropdown-link>
+                                        </x-slot>
+                                    </x-dropdown>
+                                </div>
+                            @endif
                             @if (Auth::user()->canViewOrganizationUsers())
                                 <a href="{{ route('users.index') }}" class="px-3 py-2 rounded-lg transition @if(request()->routeIs('users.*')) text-white bg-white/15 shadow-inner @else text-white/85 hover:text-white hover:bg-white/10 @endif">{{ __('shipments.users_menu') }}</a>
                             @endif
@@ -110,6 +130,19 @@
                     <a href="{{ route('shipments.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.menu') }}</a>
                     @if (Auth::user()->canManageCustomers())
                         <a href="{{ route('customers.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.customers_menu') }}</a>
+                    @endif
+                    @if (Auth::user()->canAccessFinancialModule())
+                        <div x-data="{ financeOpen: false }" class="rounded-lg">
+                            <button type="button" @click="financeOpen = ! financeOpen" class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">
+                                <span>{{ __('finance.menu_main') }}</span>
+                                <svg class="h-4 w-4 shrink-0 transition" :class="financeOpen ? 'rotate-180' : ''" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </button>
+                            <div x-show="financeOpen" x-cloak x-transition class="mt-1 space-y-1 border-l border-white/15 pl-3 ml-3">
+                                <a href="{{ route('financial.receivables') }}" class="block rounded-lg py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('finance.menu_receivables') }}</a>
+                                <a href="{{ route('service-rates.index') }}" class="block rounded-lg py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('finance.menu_rates') }}</a>
+                                <a href="{{ route('financial.reports') }}" class="block rounded-lg py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('finance.menu_reports') }}</a>
+                            </div>
+                        </div>
                     @endif
                     @if (Auth::user()->canViewOrganizationUsers())
                         <a href="{{ route('users.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('shipments.users_menu') }}</a>
