@@ -40,10 +40,6 @@
                         <h3 class="font-display text-lg font-bold text-slate-900">{{ __('finance.movements_title') }}</h3>
                         <p class="text-sm text-slate-600">{{ __('finance.movements_subtitle') }}</p>
                     </div>
-                    <div class="flex gap-2">
-                        <a href="{{ route('financial.movements.pdf', request()->query()) }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
-                        <a href="{{ route('financial.movements.excel', request()->query()) }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
-                    </div>
                 </div>
 
                 <form method="GET" action="{{ route('financial.reports') }}" class="mt-5 grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -77,6 +73,17 @@
                         <a href="{{ route('financial.reports') }}" class="inline-flex rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{{ __('shipments.filter_clear') }}</a>
                     </div>
                 </form>
+                <div class="flex justify-end items-center gap-2 mt-4 mb-3">
+                    <a href="{{ route('financial.movements.pdf', request()->query()) }}"
+                       class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg shadow hover:bg-red-700 transition">
+                        Exportar PDF
+                    </a>
+
+                    <a href="{{ route('financial.movements.excel', request()->query()) }}"
+                       class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg shadow hover:bg-green-700 transition">
+                        Exportar Excel
+                    </a>
+                </div>
 
                 <div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
                     <table class="min-w-full text-sm">
