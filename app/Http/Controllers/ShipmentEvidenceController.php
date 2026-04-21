@@ -38,8 +38,16 @@ class ShipmentEvidenceController extends Controller
             __('audit.shipment_evidence_uploaded', ['tracking' => $shipment->tracking_number]),
             $evidence,
             [
-                'shipment_id' => $shipment->id,
-                'has_image' => $path !== null,
+                'model' => Shipment::class,
+                'record_id' => $shipment->id,
+                'changes' => [
+                    'before' => [],
+                    'after' => [
+                        'evidence_id' => $evidence->id,
+                        'note' => $evidence->note,
+                        'has_image' => $path !== null,
+                    ],
+                ],
             ]
         );
 

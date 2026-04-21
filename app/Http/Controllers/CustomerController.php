@@ -103,7 +103,14 @@ class CustomerController extends Controller
             AuditActions::CUSTOMER_CREATED,
             __('audit.customer_created', ['name' => $customer->name]),
             $customer,
-            ['phase' => 'create']
+            [
+                'model' => Customer::class,
+                'record_id' => $customer->id,
+                'changes' => [
+                    'before' => [],
+                    'after' => $customer->only(['name', 'document', 'phone', 'email', 'is_active']),
+                ],
+            ]
         );
 
         return redirect()
@@ -171,6 +178,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
 
+        $before = $customer->only(['name', 'document', 'phone', 'email', 'is_active']);
         $customer->update([
             'name' => $validated['name'],
             'document' => $validated['document'] ?? null,
@@ -187,7 +195,14 @@ class CustomerController extends Controller
             AuditActions::CUSTOMER_UPDATED,
             __('audit.customer_updated', ['name' => $customer->name]),
             $customer,
-            ['phase' => 'update']
+            [
+                'model' => Customer::class,
+                'record_id' => $customer->id,
+                'changes' => [
+                    'before' => $before,
+                    'after' => $customer->only(['name', 'document', 'phone', 'email', 'is_active']),
+                ],
+            ]
         );
 
         return redirect()
@@ -222,7 +237,14 @@ class CustomerController extends Controller
             AuditActions::CUSTOMER_DEACTIVATED,
             __('audit.customer_deactivated', ['name' => $customer->name]),
             $customer,
-            ['action' => 'deactivate_soft']
+            [
+                'model' => Customer::class,
+                'record_id' => $customer->id,
+                'changes' => [
+                    'before' => ['is_active' => true],
+                    'after' => ['is_active' => false],
+                ],
+            ]
         );
 
         return redirect()
@@ -257,7 +279,14 @@ class CustomerController extends Controller
             AuditActions::CUSTOMER_UPDATED,
             __('audit.customer_activated', ['name' => $customer->name]),
             $customer,
-            ['action' => 'activate']
+            [
+                'model' => Customer::class,
+                'record_id' => $customer->id,
+                'changes' => [
+                    'before' => ['is_active' => false],
+                    'after' => ['is_active' => true],
+                ],
+            ]
         );
 
         return redirect()

@@ -124,6 +124,10 @@
                             <p class="mt-1 font-semibold text-slate-900">{{ $shipment->service_type ? \App\Finance\ServiceType::label($shipment->service_type) : '—' }}</p>
                         </div>
                         <div>
+                            <p class="text-xs font-medium text-slate-500">Tarifa ID</p>
+                            <p class="mt-1 text-slate-900">{{ $shipment->service_rate_id ?? '—' }}</p>
+                        </div>
+                        <div>
                             <p class="text-xs font-medium text-slate-500">{{ __('finance.field_distance_km') }}</p>
                             <p class="mt-1 text-slate-900">{{ $shipment->distance_km ?? '—' }}</p>
                         </div>

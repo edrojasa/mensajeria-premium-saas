@@ -63,6 +63,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/geo/cities', [GeoController::class, 'citiesByDepartment'])
         ->name('geo.cities');
 
+    Route::get('/shipments/estimate-cost', [ShipmentController::class, 'estimateCost'])
+        ->name('shipments.estimate-cost');
+
     Route::get('/customers/search', [CustomerController::class, 'search'])
         ->name('customers.search');
 
@@ -115,6 +118,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/financial/receivables', AccountsReceivableController::class)
         ->name('financial.receivables');
+
+    Route::get('/financial/receivables/pdf', [AccountsReceivableController::class, 'exportPdf'])
+        ->name('financial.receivables.pdf');
+
+    Route::get('/financial/receivables/excel', [AccountsReceivableController::class, 'exportExcel'])
+        ->name('financial.receivables.excel');
 
     Route::resource('service-rates', ServiceRateController::class)->except(['show']);
 

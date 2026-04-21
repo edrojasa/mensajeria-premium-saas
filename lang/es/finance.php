@@ -70,6 +70,10 @@ return [
 
     'col_balance' => 'Saldo',
     'col_days_open' => 'Días abierto',
+    'unknown_customer_group' => 'Clientes no registrados',
+    'total_general' => 'Total general cartera',
+    'total_no_customer' => 'Total sin cliente',
+    'receivables_pdf_title' => 'Informe de Cartera',
 
     'customer_finance_title' => 'Información financiera',
     'customer_finance_billed' => 'Total facturado',

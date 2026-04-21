@@ -1,27 +1,19 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <title>{{ __('shipments.report_pdf_title') }} {{ $shipment->tracking_number }}</title>
+@extends('pdf.layout', ['title' => __('shipments.report_pdf_title'), 'generatedAt' => $printedAt])
+
+@section('content')
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #111; }
-        h1 { font-size: 18px; margin-bottom: 4px; }
         h2 { font-size: 13px; margin-top: 14px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
         th { background: #f5f5f5; font-size: 10px; text-transform: uppercase; }
-        .muted { color: #555; font-size: 10px; }
         img.ev { max-width: 300px; height: auto; margin-top: 6px; }
     </style>
-</head>
-<body>
-    <h1>{{ __('shipments.report_pdf_title') }}</h1>
-    <p class="muted">{{ __('shipments.report_generated_at') }} {{ $printedAt->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
-
     <h2>{{ __('shipments.show_summary_title') }}</h2>
     <table>
         <tr><th>{{ __('shipments.order_number') }}</th><td>{{ $shipment->tracking_number }}</td></tr>
         <tr><th>{{ __('shipments.current_status') }}</th><td>{{ \App\Shipments\ShipmentStatus::label($shipment->status) }}</td></tr>
+        <tr><th>{{ __('finance.cost_calculated') }}</th><td>{{ $shipment->cost !== null ? '$'.number_format((float) $shipment->cost, 2, ',', '.') : '—' }}</td></tr>
+        <tr><th>{{ __('finance.field_payment_status') }}</th><td>{{ $shipment->payment_status ? \App\Finance\PaymentStatus::label($shipment->payment_status) : '—' }}</td></tr>
         @if ($shipment->customer)
             <tr><th>{{ __('shipments.customer_linked') }}</th><td>{{ $shipment->customer->name }} ({{ $shipment->customer->customer_code }})</td></tr>
         @endif
@@ -70,5 +62,4 @@
     @empty
         <p class="muted">{{ __('shipments.evidence_empty_pdf') }}</p>
     @endforelse
-</body>
-</html>
+@endsection

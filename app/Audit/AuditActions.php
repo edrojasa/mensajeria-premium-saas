@@ -18,6 +18,12 @@ final class AuditActions
 
     public const SHIPMENT_MESSENGER_ASSIGNED = 'shipment.messenger_assigned';
 
+    public const SHIPMENT_RATE_CHANGED = 'shipment.rate_changed';
+
+    public const SHIPMENT_COST_CHANGED = 'shipment.cost_changed';
+
+    public const SHIPMENT_PAYMENT_CHANGED = 'shipment.payment_changed';
+
     public const CUSTOMER_CREATED = 'customer.created';
 
     public const CUSTOMER_UPDATED = 'customer.updated';

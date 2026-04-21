@@ -42,6 +42,14 @@ class Shipment extends Model
         'notes_internal',
         'weight_kg',
         'declared_value',
+        'service_type',
+        'distance_km',
+        'cost',
+        'payment_type',
+        'payment_status',
+        'paid_amount',
+        'payment_date',
+        'service_rate_id',
         'status',
         'created_by_user_id',
         'customer_id',
@@ -82,6 +90,11 @@ class Shipment extends Model
     public function assignedCourier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function serviceRate(): BelongsTo
+    {
+        return $this->belongsTo(ServiceRate::class, 'service_rate_id');
     }
 
     public function statusHistories(): HasMany

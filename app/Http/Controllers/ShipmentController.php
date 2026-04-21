@@ -30,6 +30,7 @@ use App\Support\ShipmentsListing;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\SvgWriter;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,9 +121,10 @@ class ShipmentController extends Controller
             }
 
             $attrs = $this->attributesFromShipmentForm($validated);
-            $attrs['cost'] = $this->resolveShipmentCost(
-                $tenantId,
-                $attrs['service_type'] ?? ServiceType::STANDARD,
+            $rate = $this->resolveShipmentRate($tenantId, $attrs['service_type'] ?? ServiceType::STANDARD);
+            $attrs['service_rate_id'] = $rate?->id;
+            $attrs['cost'] = app(ShipmentCostCalculator::class)->calculate(
+                $rate,
                 $attrs['weight_kg'] ?? null,
                 $attrs['distance_km'] ?? null
             );
@@ -139,7 +141,13 @@ class ShipmentController extends Controller
                 $request->user(),
                 AuditActions::SHIPMENT_CREATED,
                 __('audit.shipment_created', ['tracking' => $shipment->tracking_number]),
-                $shipment
+                $shipment,
+                $this->auditMetaPayload(
+                    ['customer_id', 'service_type', 'service_rate_id', 'cost', 'payment_type', 'payment_status'],
+                    [],
+                    $shipment->only(['customer_id', 'service_type', 'service_rate_id', 'cost', 'payment_type', 'payment_status']),
+                    (int) $shipment->id
+                )
             );
 
             return redirect()
@@ -184,6 +192,15 @@ class ShipmentController extends Controller
         $this->authorize('update', $shipment);
 
         $validated = $request->validated();
+        $before = $shipment->only([
+            'customer_id',
+            'assigned_user_id',
+            'service_type',
+            'service_rate_id',
+            'cost',
+            'payment_type',
+            'status',
+        ]);
 
         $beforeAssign = $shipment->assigned_user_id;
 
@@ -202,9 +219,10 @@ class ShipmentController extends Controller
             }
 
             $attrs = $this->attributesFromShipmentForm($validated);
-            $attrs['cost'] = $this->resolveShipmentCost(
-                (int) $shipment->organization_id,
-                $attrs['service_type'] ?? ServiceType::STANDARD,
+            $rate = $this->resolveShipmentRate((int) $shipment->organization_id, $attrs['service_type'] ?? ServiceType::STANDARD);
+            $attrs['service_rate_id'] = $rate?->id;
+            $attrs['cost'] = app(ShipmentCostCalculator::class)->calculate(
+                $rate,
                 $attrs['weight_kg'] ?? null,
                 $attrs['distance_km'] ?? null
             );
@@ -230,8 +248,11 @@ class ShipmentController extends Controller
             $request->user(),
             AuditActions::SHIPMENT_UPDATED,
             __('audit.shipment_updated', ['tracking' => $shipment->tracking_number]),
-            $shipment
+            $shipment,
+            $this->auditMetaPayload(array_keys($before), $before, $shipment->only(array_keys($before)), (int) $shipment->id)
         );
+
+        $this->logShipmentSpecificChanges($request, $shipment, $before);
 
         return redirect()
             ->route('shipments.show', $shipment)
@@ -644,6 +665,7 @@ class ShipmentController extends Controller
         $this->authorize('updatePayment', $shipment);
 
         $validated = $request->validated();
+        $before = $shipment->only(['payment_status', 'paid_amount', 'payment_date']);
         $status = $validated['payment_status'];
 
         $shipment->payment_status = $status;
@@ -665,6 +687,14 @@ class ShipmentController extends Controller
 
         $shipment->save();
 
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::SHIPMENT_PAYMENT_CHANGED,
+            __('finance.payment_updated'),
+            $shipment,
+            $this->auditMetaPayload(array_keys($before), $before, $shipment->only(array_keys($before)), (int) $shipment->id)
+        );
+
         return redirect()
             ->route('shipments.show', $shipment)
             ->with('status', __('finance.payment_updated'));
@@ -676,13 +706,99 @@ class ShipmentController extends Controller
         mixed $weightKg,
         mixed $distanceKm
     ): ?float {
-        $rate = ServiceRate::query()
+        $rate = $this->resolveShipmentRate($organizationId, $serviceType);
+
+        return app(ShipmentCostCalculator::class)->calculate($rate, $weightKg, $distanceKm);
+    }
+
+    public function estimateCost(Request $request): JsonResponse
+    {
+        $this->authorize('create', Shipment::class);
+
+        $tenantId = tenant_id();
+        if ($tenantId === null) {
+            abort(403);
+        }
+
+        $serviceType = (string) $request->input('service_type', ServiceType::STANDARD);
+        if (! in_array($serviceType, ServiceType::all(), true)) {
+            $serviceType = ServiceType::STANDARD;
+        }
+
+        $rate = $this->resolveShipmentRate($tenantId, $serviceType);
+        $cost = app(ShipmentCostCalculator::class)->calculate(
+            $rate,
+            $request->input('weight_kg'),
+            $request->input('distance_km')
+        );
+
+        return response()->json([
+            'cost' => $cost,
+            'service_rate_id' => $rate?->id,
+            'formatted' => $cost !== null ? '$'.number_format((float) $cost, 2, ',', '.') : null,
+        ]);
+    }
+
+    private function resolveShipmentRate(int $organizationId, string $serviceType): ?ServiceRate
+    {
+        return ServiceRate::query()
             ->where('organization_id', $organizationId)
             ->where('service_type', $serviceType)
             ->where('active', true)
             ->first();
+    }
 
-        return app(ShipmentCostCalculator::class)->calculate($rate, $weightKg, $distanceKm);
+    /**
+     * @param  array<string, mixed>  $before
+     */
+    private function logShipmentSpecificChanges(Request $request, Shipment $shipment, array $before): void
+    {
+        $after = $shipment->only(array_keys($before));
+
+        if ((int) ($before['service_rate_id'] ?? 0) !== (int) ($after['service_rate_id'] ?? 0)) {
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_RATE_CHANGED,
+                __('audit.shipment_updated', ['tracking' => $shipment->tracking_number]),
+                $shipment,
+                $this->auditMetaPayload(['service_rate_id'], $before, $after, (int) $shipment->id)
+            );
+        }
+
+        if ((float) ($before['cost'] ?? 0) !== (float) ($after['cost'] ?? 0)) {
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::SHIPMENT_COST_CHANGED,
+                __('audit.shipment_updated', ['tracking' => $shipment->tracking_number]),
+                $shipment,
+                $this->auditMetaPayload(['cost'], $before, $after, (int) $shipment->id)
+            );
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $fields
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     * @return array<string, mixed>
+     */
+    private function auditMetaPayload(array $fields, array $before, array $after, ?int $recordId = null): array
+    {
+        $old = [];
+        $new = [];
+        foreach ($fields as $field) {
+            $old[$field] = $before[$field] ?? null;
+            $new[$field] = $after[$field] ?? null;
+        }
+
+        return [
+            'model' => Shipment::class,
+            'record_id' => $recordId,
+            'changes' => [
+                'before' => $old,
+                'after' => $new,
+            ],
+        ];
     }
 
     public function updateStatus(
@@ -724,7 +840,13 @@ class ShipmentController extends Controller
                 $request->user(),
                 AuditActions::SHIPMENT_STATUS_CHANGED,
                 $desc,
-                $shipment
+                $shipment,
+                $this->auditMetaPayload(
+                    ['status', 'status_note'],
+                    ['status' => $from, 'status_note' => null],
+                    ['status' => $validated['status'], 'status_note' => $validated['notes'] ?? null],
+                    (int) $shipment->id
+                )
             );
         }
 

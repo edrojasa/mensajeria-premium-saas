@@ -229,7 +229,7 @@
                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                             <div>
                                 <x-input-label for="service_type" :value="__('finance.field_service_type')" />
-                                <select id="service_type" name="service_type" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
+                                <select id="service_type" name="service_type" @change="estimateCost()" class="mt-1 block w-full rounded-xl border-slate-300 shadow-sm">
                                     @foreach (\App\Finance\ServiceType::all() as $st)
                                         <option value="{{ $st }}" @selected(old('service_type', \App\Finance\ServiceType::STANDARD) === $st)>{{ \App\Finance\ServiceType::label($st) }}</option>
                                     @endforeach
@@ -238,7 +238,7 @@
                             </div>
                             <div>
                                 <x-input-label for="distance_km" :value="__('finance.field_distance_km') . ' (' . __('shipments.section_optional') . ')'" />
-                                <x-text-input id="distance_km" name="distance_km" type="number" step="0.001" min="0" class="mt-1 block w-full rounded-xl" :value="old('distance_km')" placeholder="km" />
+                                <x-text-input id="distance_km" name="distance_km" type="number" step="0.001" min="0" @input.debounce.400ms="estimateCost()" class="mt-1 block w-full rounded-xl" :value="old('distance_km')" placeholder="km" />
                                 <x-input-error class="mt-2" :messages="$errors->get('distance_km')" />
                             </div>
                             <div>
@@ -252,6 +252,7 @@
                             </div>
                         </div>
                         <p class="text-xs text-slate-600">{{ __('finance.cost_missing_rate') }}</p>
+                        <p class="text-sm font-semibold text-emerald-800" x-show="costFormatted" x-text="'{{ __('finance.cost_calculated') }}: ' + costFormatted"></p>
                     </fieldset>
 
                     <fieldset class="space-y-4">
@@ -264,7 +265,7 @@
                             </div>
                             <div>
                                 <x-input-label for="weight_kg" :value="__('shipments.weight_kg') . ' (' . __('shipments.section_optional') . ')'" />
-                                <x-text-input id="weight_kg" name="weight_kg" type="number" step="0.001" min="0" class="mt-1 block w-full" :value="old('weight_kg')" />
+                                <x-text-input id="weight_kg" name="weight_kg" type="number" step="0.001" min="0" @input.debounce.400ms="estimateCost()" class="mt-1 block w-full" :value="old('weight_kg')" />
                                 <x-input-error class="mt-2" :messages="$errors->get('weight_kg')" />
                             </div>
                             <div>
@@ -298,6 +299,7 @@
                     customerId: @json(old('customer_id') ? (string) old('customer_id') : (isset($preCustomerId) ? (string) $preCustomerId : '')),
                     results: @json($initialCustomers ?? []),
                     addresses: [],
+                    costFormatted: null,
                     async fetchCustomers() {
                         const url = @json(route('customers.search')) + '?q=' + encodeURIComponent(this.search);
                         const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -315,10 +317,23 @@
                         const data = await res.json();
                         this.addresses = data.data ?? [];
                     },
+                    async estimateCost() {
+                        const serviceType = document.getElementById('service_type')?.value ?? '';
+                        const distanceKm = document.getElementById('distance_km')?.value ?? '';
+                        const weightKg = document.getElementById('weight_kg')?.value ?? '';
+                        const url = @json(route('shipments.estimate-cost'))
+                            + '?service_type=' + encodeURIComponent(serviceType)
+                            + '&distance_km=' + encodeURIComponent(distanceKm)
+                            + '&weight_kg=' + encodeURIComponent(weightKg);
+                        const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        const data = await res.json();
+                        this.costFormatted = data.formatted ?? null;
+                    },
                     init() {
                         if (this.mode === 'existing' && this.customerId) {
                             this.loadAddresses();
                         }
+                        this.estimateCost();
                     },
                 };
             }

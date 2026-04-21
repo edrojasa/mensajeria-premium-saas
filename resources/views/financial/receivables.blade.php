@@ -8,44 +8,60 @@
 
     <div class="py-10 md:py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 px-4">
-            <div class="rounded-3xl border border-slate-200/90 bg-white shadow-xl overflow-hidden ring-1 ring-slate-900/5">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('shipments.order_number') }}</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_customer_code') }}</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('exports.shipments_col_customer') }}</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('exports.shipments_col_cost') }}</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('finance.col_balance') }}</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('finance.col_days_open') }}</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('shipments.actions_column') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($shipments as $shipment)
-                                <tr class="hover:bg-brand-50/40">
-                                    <td class="px-6 py-3 font-mono font-semibold text-brand-900">{{ $shipment->tracking_number }}</td>
-                                    <td class="px-6 py-3 font-mono text-slate-800">{{ $shipment->customer?->customer_code ?? '—' }}</td>
-                                    <td class="px-6 py-3 text-slate-800">{{ $shipment->customer?->name ?? '—' }}</td>
-                                    <td class="px-6 py-3 text-right">{{ $shipment->cost !== null ? '$'.number_format((float) $shipment->cost, 2, ',', '.') : '—' }}</td>
-                                    <td class="px-6 py-3 text-right font-semibold text-amber-800">${{ number_format($shipment->balanceDue(), 2, ',', '.') }}</td>
-                                    <td class="px-6 py-3 text-right text-slate-600">{{ now()->diffInDays($shipment->created_at) }}</td>
-                                    <td class="px-6 py-3 text-right">
-                                        <a href="{{ route('shipments.show', $shipment) }}" class="font-bold text-brand-600 hover:text-brand-800">{{ __('customers.view_detail') }}</a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-12 text-center text-slate-600">{{ __('shipments.empty') }}</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            <div class="grid gap-4 md:grid-cols-3 mb-6">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <p class="text-xs uppercase font-semibold text-slate-500">{{ __('finance.total_general') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-slate-900">${{ number_format($totalGeneral, 2, ',', '.') }}</p>
                 </div>
-                @if ($shipments->hasPages())
-                    <div class="px-6 py-4 border-t border-slate-100">{{ $shipments->links() }}</div>
-                @endif
+                <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <p class="text-xs uppercase font-semibold text-slate-500">{{ __('finance.total_no_customer') }}</p>
+                    <p class="mt-2 text-2xl font-bold text-amber-700">${{ number_format($totalNoCustomer, 2, ',', '.') }}</p>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 flex items-end justify-end gap-2">
+                    <a href="{{ route('financial.receivables.pdf') }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
+                    <a href="{{ route('financial.receivables.excel') }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                @forelse ($groups as $group)
+                    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900">{{ $group['customer_name'] }}</h3>
+                                @if ($group['customer_code'])
+                                    <p class="text-xs text-slate-500">{{ $group['customer_code'] }}</p>
+                                @endif
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-slate-600">{{ $group['shipments_count'] }} envíos</p>
+                                <p class="text-lg font-bold text-amber-700">${{ number_format($group['total_due'], 2, ',', '.') }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">{{ __('shipments.order_number') }}</th>
+                                        <th class="px-4 py-2 text-right">{{ __('finance.col_balance') }}</th>
+                                        <th class="px-4 py-2 text-right">{{ __('finance.col_days_open') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach ($group['rows'] as $shipment)
+                                        <tr>
+                                            <td class="px-4 py-2"><a href="{{ route('shipments.show', $shipment) }}" class="font-mono text-brand-700">{{ $shipment->tracking_number }}</a></td>
+                                            <td class="px-4 py-2 text-right">${{ number_format($shipment->balanceDue(), 2, ',', '.') }}</td>
+                                            <td class="px-4 py-2 text-right">{{ now()->diffInDays($shipment->created_at) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">{{ __('shipments.empty') }}</div>
+                @endforelse
             </div>
         </div>
     </div>
