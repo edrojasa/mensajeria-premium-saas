@@ -11,7 +11,7 @@
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
         th { background: #f5f5f5; font-size: 10px; text-transform: uppercase; }
         .muted { color: #555; font-size: 10px; }
-        img.ev { max-width: 260px; height: auto; margin-top: 6px; }
+        img.ev { max-width: 300px; height: auto; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -41,7 +41,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($shipment->statusHistories as $entry)
+            @foreach ($statusRows as $entry)
                 <tr>
                     <td>{{ $entry->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</td>
                     <td>{{ $entry->fromStatusLabel() ?? '—' }}</td>
@@ -53,7 +53,10 @@
     </table>
 
     <h2>{{ __('shipments.evidence_section_title') }}</h2>
-    @forelse ($shipment->evidences as $evidence)
+    @if (! $gdEnabled)
+        <p class="muted">{{ __('shipments.pdf_gd_missing_note') }}</p>
+    @endif
+    @forelse ($evidenceRows as $evidence)
         <div style="margin-bottom: 12px; page-break-inside: avoid;">
             <p class="muted">{{ $evidence->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}
                 — {{ $evidence->author?->name ?? '—' }}</p>

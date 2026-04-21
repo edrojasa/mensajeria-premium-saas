@@ -30,7 +30,10 @@ class ShipmentHistoryExport implements FromCollection, WithHeadings
 
     public function collection(): Collection
     {
-        $statusRows = $this->shipment->statusHistories->map(function ($row): array {
+        $statusRows = $this->shipment->statusHistories
+            ->sortBy('created_at')
+            ->values()
+            ->map(function ($row): array {
             return [
                 'tracking_number' => $this->shipment->tracking_number,
                 'type' => 'status',
@@ -41,9 +44,12 @@ class ShipmentHistoryExport implements FromCollection, WithHeadings
                 'created_at' => optional($row->created_at)->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
                 'image_url' => '',
             ];
-        });
+            });
 
-        $evidenceRows = $this->shipment->evidences->map(function ($row): array {
+        $evidenceRows = $this->shipment->evidences
+            ->sortBy('created_at')
+            ->values()
+            ->map(function ($row): array {
             return [
                 'tracking_number' => $this->shipment->tracking_number,
                 'type' => 'evidence',
@@ -54,7 +60,7 @@ class ShipmentHistoryExport implements FromCollection, WithHeadings
                 'created_at' => optional($row->created_at)->timezone(config('app.timezone'))->format('Y-m-d H:i:s'),
                 'image_url' => $row->image_path ? asset('storage/'.$row->image_path) : '',
             ];
-        });
+            });
 
         return $statusRows
             ->concat($evidenceRows)

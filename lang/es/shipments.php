@@ -168,4 +168,5 @@ return [
     'messenger_cannot_cancel' => 'Los mensajeros no pueden cancelar envíos.',
     'evidence_table_missing' => 'La tabla de evidencias no existe. Ejecuta las migraciones pendientes.',
     'customer_inactive_for_shipment' => 'No se pueden crear envíos con clientes inactivos.',
+    'pdf_gd_missing_note' => 'Nota: el servidor no tiene GD activo; se omiten imágenes no JPEG para evitar errores al generar el PDF.',
 ];

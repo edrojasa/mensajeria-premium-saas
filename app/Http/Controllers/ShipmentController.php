@@ -335,12 +335,31 @@ class ShipmentController extends Controller
             'evidences.author',
         ]);
 
+        $gdEnabled = extension_loaded('gd');
+        $mimeByExtension = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+        ];
+
         $evidenceImages = [];
-        foreach ($shipment->evidences as $evidence) {
+        foreach ($shipment->evidences->sortBy('created_at') as $evidence) {
             if ($evidence->image_path) {
                 $fullPath = storage_path('app/public/'.$evidence->image_path);
                 if (is_readable($fullPath)) {
-                    $mime = @mime_content_type($fullPath) ?: 'image/jpeg';
+                    $ext = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
+                    $mime = $mimeByExtension[$ext] ?? null;
+
+                    if ($mime === null) {
+                        continue;
+                    }
+
+                    // DOMPDF can require GD for some image formats in some environments.
+                    // Keep PDF generation stable when GD is unavailable.
+                    if (! $gdEnabled && $mime !== 'image/jpeg') {
+                        continue;
+                    }
+
                     $evidenceImages[$evidence->id] = [
                         'data' => base64_encode((string) file_get_contents($fullPath)),
                         'mime' => $mime,
@@ -352,6 +371,9 @@ class ShipmentController extends Controller
         $pdf = Pdf::loadView('shipments.pdf.report', [
             'shipment' => $shipment,
             'evidenceImages' => $evidenceImages,
+            'statusRows' => $shipment->statusHistories->sortBy('created_at')->values(),
+            'evidenceRows' => $shipment->evidences->sortBy('created_at')->values(),
+            'gdEnabled' => $gdEnabled,
             'printedAt' => now(),
         ])->setPaper('a4', 'portrait');
 
