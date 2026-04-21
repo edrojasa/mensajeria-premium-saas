@@ -230,6 +230,41 @@ class CustomerController extends Controller
             ->with('status', __('customers.deactivated_success'));
     }
 
+    public function activate(Request $request, Customer $customer): RedirectResponse
+    {
+        $this->authorize('deactivate', $customer);
+
+        if ($customer->is_active) {
+            return redirect()
+                ->route('customers.index')
+                ->with('status', __('customers.activated_success'));
+        }
+
+        $updated = Customer::query()
+            ->whereKey($customer->id)
+            ->where('organization_id', $customer->organization_id)
+            ->where('is_active', false)
+            ->update(['is_active' => true]);
+
+        if ($updated !== 1) {
+            return redirect()
+                ->route('customers.index')
+                ->withErrors(__('customers.activate_failed'));
+        }
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::CUSTOMER_UPDATED,
+            __('audit.customer_activated', ['name' => $customer->name]),
+            $customer,
+            ['action' => 'activate']
+        );
+
+        return redirect()
+            ->route('customers.index')
+            ->with('status', __('customers.activated_success'));
+    }
+
     public function forceDestroy(Request $request, Customer $customer): RedirectResponse
     {
         $this->authorize('forceDestroy', $customer);

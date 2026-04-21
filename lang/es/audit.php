@@ -10,6 +10,7 @@ return [
     'user_created' => 'Usuario creado: :name (:email)',
     'user_updated' => 'Usuario actualizado: :name',
     'customer_deactivated' => 'Cliente desactivado: :name',
+    'customer_activated' => 'Cliente reactivado: :name',
     'customer_force_deleted' => 'Cliente eliminado definitivamente: :name',
     'shipment_deactivated' => 'Envío cancelado/archivado: :tracking',
     'shipment_evidence_uploaded' => 'Evidencia registrada en envío :tracking',

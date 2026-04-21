@@ -19,6 +19,7 @@ use App\Models\Department;
 use App\Models\ServiceRate;
 use App\Models\Shipment;
 use App\Models\User;
+use App\Exports\ShipmentHistoryExport;
 use App\Organizations\OrganizationRole;
 use App\Shipments\ShipmentStatus;
 use App\Services\ActivityLogger;
@@ -34,6 +35,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class ShipmentController extends Controller
@@ -355,6 +358,22 @@ class ShipmentController extends Controller
         return $pdf->download('informe-envio-'.$shipment->tracking_number.'.pdf');
     }
 
+    public function reportExcel(Shipment $shipment): BinaryFileResponse
+    {
+        $this->authorize('viewReport', $shipment);
+
+        if (! Schema::hasTable('shipment_evidences')) {
+            abort(422, __('shipments.evidence_table_missing'));
+        }
+
+        $shipment->loadMissing(['statusHistories.changedBy', 'evidences.author']);
+
+        return Excel::download(
+            new ShipmentHistoryExport($shipment),
+            'historial-envio-'.$shipment->tracking_number.'.xlsx'
+        );
+    }
+
     public function guide(Shipment $shipment): View
     {
         $this->authorize('viewGuide', $shipment);
@@ -536,6 +555,9 @@ class ShipmentController extends Controller
         if ($mode === 'existing' || $mode === 'new') {
             $customerId = (int) $validated['customer_id'];
             $customer = Customer::query()->findOrFail($customerId);
+            if (! $customer->is_active) {
+                abort(422, __('shipments.customer_inactive_for_shipment'));
+            }
             $validated['recipient_name'] = $customer->name;
             $validated['recipient_phone'] = $customer->phone;
             $validated['recipient_email'] = $customer->email;

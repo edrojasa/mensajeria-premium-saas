@@ -188,20 +188,20 @@
             <section class="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-6 md:p-8">
                 <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ __('shipments.evidence_section_title') }}</h3>
                 @can('addEvidence', $shipment)
-                    <form action="{{ route('shipments.evidences.store', $shipment) }}" method="POST" enctype="multipart/form-data" class="mt-4 grid gap-4 md:grid-cols-12 md:items-end border border-slate-100 rounded-xl p-4 bg-slate-50/80">
+                    <form action="{{ route('shipments.evidences.store', $shipment) }}" method="POST" enctype="multipart/form-data" class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 md:p-6">
                         @csrf
-                        <div class="md:col-span-8">
+                        <div>
                             <x-input-label for="ev_note" :value="__('shipments.evidence_note_label')" />
-                            <textarea id="ev_note" name="note" rows="2" class="mt-1 block w-full rounded-xl border-slate-300">{{ old('note') }}</textarea>
+                            <textarea id="ev_note" name="note" rows="5" class="mt-2 block w-full rounded-xl border-slate-300" placeholder="{{ __('shipments.evidence_note_placeholder') }}">{{ old('note') }}</textarea>
                             <x-input-error :messages="$errors->get('note')" class="mt-2" />
                         </div>
-                        <div class="md:col-span-4">
+                        <div class="mt-4">
                             <x-input-label for="ev_image" :value="__('shipments.evidence_image_label')" />
-                            <input id="ev_image" name="image" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 block w-full text-sm text-slate-600" />
+                            <input id="ev_image" name="image" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-2 block w-full text-sm text-slate-600" />
                             <x-input-error :messages="$errors->get('image')" class="mt-2" />
                         </div>
-                        <div class="md:col-span-12 flex justify-end">
-                            <x-primary-button type="submit">{{ __('shipments.evidence_submit') }}</x-primary-button>
+                        <div class="mt-5 flex justify-start sm:justify-end">
+                            <x-primary-button type="submit" class="w-full sm:w-auto justify-center">{{ __('shipments.evidence_submit') }}</x-primary-button>
                         </div>
                     </form>
                 @endcan
@@ -218,7 +218,7 @@
                                 </div>
                                 @if ($evidence->image_path)
                                     <div class="shrink-0">
-                                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($evidence->image_path) }}" alt="" class="max-h-48 rounded-xl border border-slate-200 shadow-sm">
+                                        <img src="{{ asset('storage/'.$evidence->image_path) }}" alt="" class="max-h-48 rounded-xl border border-slate-200 shadow-sm">
                                     </div>
                                 @endif
                             </li>
@@ -386,7 +386,13 @@
             @endcan
 
             <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                <h3 class="font-semibold text-slate-900 mb-4">{{ __('shipments.history_section') }}</h3>
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 class="font-semibold text-slate-900">{{ __('shipments.history_section') }}</h3>
+                    <div class="flex gap-2">
+                        <a href="{{ route('shipments.report.pdf', $shipment) }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">{{ __('shipments.export_history_pdf') }}</a>
+                        <a href="{{ route('shipments.report.excel', $shipment) }}" class="inline-flex items-center rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">{{ __('shipments.export_history_excel') }}</a>
+                    </div>
+                </div>
                 @if ($shipment->statusHistories->isEmpty())
                     <p class="text-sm text-slate-600">{{ __('shipments.history_empty') }}</p>
                 @else

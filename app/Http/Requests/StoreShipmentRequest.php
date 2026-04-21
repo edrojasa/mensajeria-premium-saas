@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Finance\PaymentType;
 use App\Finance\ServiceType;
+use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Organizations\OrganizationRole;
 use Illuminate\Foundation\Http\FormRequest;
@@ -103,6 +104,13 @@ class StoreShipmentRequest extends FormRequest
 
             if ($mode === 'existing' && ! $this->filled('customer_id')) {
                 $validator->errors()->add('customer_id', __('validation.required', ['attribute' => 'cliente']));
+            }
+
+            if ($mode === 'existing' && $this->filled('customer_id')) {
+                $customer = Customer::query()->find((int) $this->input('customer_id'));
+                if ($customer !== null && ! $customer->is_active) {
+                    $validator->errors()->add('customer_id', __('shipments.customer_inactive_for_shipment'));
+                }
             }
 
             if ($mode === 'new') {

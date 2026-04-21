@@ -77,6 +77,12 @@
                                                     @method('PATCH')
                                                     <button type="submit" class="font-semibold text-amber-700 hover:text-amber-900">{{ __('customers.action_deactivate') }}</button>
                                                 </form>
+                                            @else
+                                                <form action="{{ route('customers.activate', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.activate_confirm')));">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="font-semibold text-emerald-700 hover:text-emerald-900">{{ __('customers.action_activate') }}</button>
+                                                </form>
                                             @endif
                                         @endcan
                                         @can('forceDestroy', $customer)

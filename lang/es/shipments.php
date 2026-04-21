@@ -143,6 +143,8 @@ return [
     'guide_printed_at' => 'Documento generado',
 
     'download_report_pdf' => 'Descargar informe PDF',
+    'export_history_pdf' => 'Exportar PDF',
+    'export_history_excel' => 'Exportar Excel',
     'report_pdf_title' => 'Informe de envío',
     'report_generated_at' => 'Generado:',
     'deactivate_action' => 'Desactivar envío',
@@ -154,6 +156,7 @@ return [
 
     'evidence_section_title' => 'Evidencias y notas de campo',
     'evidence_note_label' => 'Nota',
+    'evidence_note_placeholder' => 'Describe lo ocurrido en entrega, novedad o evidencia de campo...',
     'evidence_image_label' => 'Foto (JPG o PNG, máx. 2 MB)',
     'evidence_submit' => 'Registrar evidencia',
     'evidence_saved' => 'Evidencia registrada.',
@@ -164,4 +167,5 @@ return [
     'filter_archived' => 'Histórico cancelados',
     'messenger_cannot_cancel' => 'Los mensajeros no pueden cancelar envíos.',
     'evidence_table_missing' => 'La tabla de evidencias no existe. Ejecuta las migraciones pendientes.',
+    'customer_inactive_for_shipment' => 'No se pueden crear envíos con clientes inactivos.',
 ];

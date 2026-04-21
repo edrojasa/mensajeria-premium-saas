@@ -72,6 +72,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::patch('/customers/{customer}/deactivate', [CustomerController::class, 'deactivate'])
         ->name('customers.deactivate');
 
+    Route::patch('/customers/{customer}/activate', [CustomerController::class, 'activate'])
+        ->name('customers.activate');
+
     Route::delete('/customers/{customer}/force', [CustomerController::class, 'forceDestroy'])
         ->name('customers.force-destroy');
 
@@ -125,6 +128,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/shipments/{shipment}/report/pdf', [ShipmentController::class, 'reportPdf'])
         ->name('shipments.report.pdf');
+
+    Route::get('/shipments/{shipment}/report/excel', [ShipmentController::class, 'reportExcel'])
+        ->name('shipments.report.excel');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

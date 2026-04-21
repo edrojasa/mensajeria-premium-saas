@@ -20,6 +20,12 @@
                             @method('PATCH')
                             <button type="submit" class="inline-flex items-center rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 hover:bg-amber-100">{{ __('customers.action_deactivate') }}</button>
                         </form>
+                    @else
+                        <form action="{{ route('customers.activate', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.activate_confirm')));">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="inline-flex items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-900 hover:bg-emerald-100">{{ __('customers.action_activate') }}</button>
+                        </form>
                     @endif
                 @endcan
                 @can('forceDestroy', $customer)
@@ -40,6 +46,16 @@
                 <div><dt class="text-slate-500">{{ __('customers.field_customer_code') }}</dt><dd class="font-mono font-semibold text-brand-900">{{ $customer->customer_code }}</dd></div>
                 <div><dt class="text-slate-500">{{ __('customers.field_document') }}</dt><dd class="font-medium text-slate-900">{{ $customer->document ?? '—' }}</dd></div>
                 <div><dt class="text-slate-500">{{ __('customers.field_email') }}</dt><dd class="font-medium text-slate-900">{{ $customer->email ?? '—' }}</dd></div>
+                <div>
+                    <dt class="text-slate-500">{{ __('customers.field_status_column') }}</dt>
+                    <dd class="font-medium">
+                        @if ($customer->is_active)
+                            <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">{{ __('customers.status_active_upper') }}</span>
+                        @else
+                            <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-900">{{ __('customers.status_inactive_upper') }}</span>
+                        @endif
+                    </dd>
+                </div>
                 @if ($customer->notes)
                     <div class="sm:col-span-2"><dt class="text-slate-500">{{ __('customers.field_notes') }}</dt><dd class="text-slate-800">{{ $customer->notes }}</dd></div>
                 @endif

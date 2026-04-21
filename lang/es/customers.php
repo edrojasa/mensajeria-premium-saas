@@ -46,6 +46,12 @@ return [
     'force_delete_confirm' => '¿Eliminar definitivamente este cliente? Esta acción no se puede deshacer.',
     'field_status_column' => 'Estado',
     'action_deactivate' => 'Desactivar',
+    'action_activate' => 'Activar',
     'action_force_delete' => 'Eliminar',
     'deactivate_failed' => 'No fue posible desactivar el cliente. Inténtalo de nuevo.',
+    'activate_failed' => 'No fue posible activar el cliente. Inténtalo de nuevo.',
+    'activated_success' => 'Cliente reactivado correctamente.',
+    'activate_confirm' => '¿Reactivar este cliente para permitir nuevos envíos?',
+    'status_active_upper' => 'ACTIVO',
+    'status_inactive_upper' => 'INACTIVO',
 ];
