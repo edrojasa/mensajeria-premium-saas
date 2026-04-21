@@ -14,6 +14,7 @@ use App\Http\Controllers\GeoController;
 use App\Http\Controllers\PublicTrackingController;
 use App\Http\Controllers\ServiceRateController;
 use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\ShipmentEvidenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -68,6 +69,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/customers/{customer}/addresses', [CustomerController::class, 'addressesJson'])
         ->name('customers.addresses');
 
+    Route::patch('/customers/{customer}/deactivate', [CustomerController::class, 'deactivate'])
+        ->name('customers.deactivate');
+
+    Route::delete('/customers/{customer}/force', [CustomerController::class, 'forceDestroy'])
+        ->name('customers.force-destroy');
+
     Route::resource('customers', CustomerController::class);
 
     Route::get('/users', [OrganizationUserController::class, 'index'])
@@ -82,11 +89,20 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::patch('/users/{user}', [OrganizationUserController::class, 'update'])
         ->name('users.update');
 
+    Route::delete('/users/{user}', [OrganizationUserController::class, 'destroy'])
+        ->name('users.destroy');
+
     Route::get('/my-shipments', [CourierShipmentController::class, 'index'])
         ->name('courier.shipments.index');
 
     Route::post('/shipments/{shipment}/status', [ShipmentController::class, 'updateStatus'])
         ->name('shipments.status.update');
+
+    Route::post('/shipments/{shipment}/evidences', [ShipmentEvidenceController::class, 'store'])
+        ->name('shipments.evidences.store');
+
+    Route::patch('/shipments/{shipment}/deactivate', [ShipmentController::class, 'deactivate'])
+        ->name('shipments.deactivate');
 
     Route::patch('/shipments/{shipment}/payment', [ShipmentController::class, 'updatePayment'])
         ->name('shipments.payment.update');
@@ -106,6 +122,9 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/shipments/{shipment}/guide/pdf', [ShipmentController::class, 'guidePdf'])
         ->name('shipments.guide.pdf');
+
+    Route::get('/shipments/{shipment}/report/pdf', [ShipmentController::class, 'reportPdf'])
+        ->name('shipments.report.pdf');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

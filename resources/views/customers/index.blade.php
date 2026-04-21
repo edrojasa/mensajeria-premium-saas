@@ -25,6 +25,10 @@
                         <x-input-label for="customer_q" :value="__('customers.search_placeholder')" />
                         <x-text-input id="customer_q" name="q" type="search" class="mt-2 block w-full rounded-2xl" :value="request('q')" />
                     </div>
+                    <label class="flex items-center gap-2 text-sm text-slate-700 mt-2 sm:mt-0">
+                        <input type="checkbox" name="inactive" value="1" @checked(request()->boolean('inactive')) />
+                        {{ __('customers.filter_inactive') }}
+                    </label>
                     <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
                         <x-primary-button type="submit" class="rounded-2xl min-h-[2.75rem] justify-center px-5">{{ __('customers.search_submit') }}</x-primary-button>
                         <a href="{{ route('customers.index') }}" class="inline-flex min-h-[2.75rem] items-center justify-center whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">{{ __('shipments.filter_clear') }}</a>
@@ -42,6 +46,7 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_phone') }}</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_email') }}</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.shipments_count') }}</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('customers.field_status_column') }}</th>
                                 <th class="px-6 py-4 text-right text-xs font-bold uppercase text-slate-600">{{ __('shipments.actions_column') }}</th>
                             </tr>
                         </thead>
@@ -53,13 +58,39 @@
                                     <td class="px-6 py-4 text-slate-700">{{ $customer->phone }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $customer->email ?? '—' }}</td>
                                     <td class="px-6 py-4"><span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800">{{ $customer->shipments_count }}</span></td>
-                                    <td class="px-6 py-4 text-right">
-                                        <a href="{{ route('customers.show', $customer) }}" class="font-bold text-brand-600 hover:text-brand-800">{{ __('customers.view_detail') }} →</a>
+                                    <td class="px-6 py-4">
+                                        @if ($customer->is_active)
+                                            <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">{{ __('customers.status_active') }}</span>
+                                        @else
+                                            <span class="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-bold text-slate-700">{{ __('customers.status_inactive') }}</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
+                                        <a href="{{ route('customers.show', $customer) }}" class="font-bold text-brand-600 hover:text-brand-800">{{ __('customers.view_detail') }}</a>
+                                        @can('update', $customer)
+                                            <a href="{{ route('customers.edit', $customer) }}" class="font-semibold text-slate-700 hover:text-slate-900">{{ __('customers.edit_action') }}</a>
+                                        @endcan
+                                        @can('deactivate', $customer)
+                                            @if ($customer->is_active)
+                                                <form action="{{ route('customers.deactivate', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.deactivate_confirm')));">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="font-semibold text-amber-700 hover:text-amber-900">{{ __('customers.action_deactivate') }}</button>
+                                                </form>
+                                            @endif
+                                        @endcan
+                                        @can('forceDestroy', $customer)
+                                            <form action="{{ route('customers.force-destroy', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.force_delete_confirm')));">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="font-semibold text-red-700 hover:text-red-900">{{ __('customers.action_force_delete') }}</button>
+                                            </form>
+                                        @endcan
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-14 text-center text-slate-600">{{ __('customers.empty_index') }}</td>
+                                    <td colspan="7" class="px-6 py-14 text-center text-slate-600">{{ __('customers.empty_index') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

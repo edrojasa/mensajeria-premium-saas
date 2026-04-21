@@ -27,6 +27,10 @@ return [
     'active' => 'Activo',
     'inactive' => 'Inactivo',
     'updated_success' => 'Usuario actualizado.',
+    'removed_success' => 'Usuario eliminado de la organización.',
+    'cannot_delete_self' => 'No puede eliminar su propia cuenta desde aquí.',
+    'delete_from_org' => 'Quitar de la organización',
+    'delete_from_org_confirm' => '¿Quitar a este usuario de la organización? Si no pertenece a otra, la cuenta se eliminará.',
     'role_labels' => [
         'admin' => 'Administrador',
         'operador' => 'Operador',

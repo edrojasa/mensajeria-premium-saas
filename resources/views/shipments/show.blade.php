@@ -22,6 +22,22 @@
                 <a href="{{ route('shipments.guide.pdf', $shipment) }}" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                     {{ __('shipments.guide_pdf') }}
                 </a>
+                @can('viewReport', $shipment)
+                    <a href="{{ route('shipments.report.pdf', $shipment) }}" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 shadow-sm">
+                        {{ __('shipments.download_report_pdf') }}
+                    </a>
+                @endcan
+                @can('deactivate', $shipment)
+                    @if ($shipment->status !== \App\Shipments\ShipmentStatus::DELIVERED && $shipment->status !== \App\Shipments\ShipmentStatus::CANCELLED)
+                        <form method="POST" action="{{ route('shipments.deactivate', $shipment) }}" class="inline" onsubmit="return confirm(@json(__('shipments.confirm_deactivate')));">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100">
+                                {{ __('shipments.deactivate_action') }}
+                            </button>
+                        </form>
+                    @endif
+                @endcan
             </div>
         </div>
     </x-slot>
@@ -33,6 +49,12 @@
             @if ($shipment->status === ShipmentStatus::INCIDENT)
                 <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                     {{ __('shipments.timeline_incident_banner') }}
+                </div>
+            @endif
+
+            @if (!empty($timelineCancelled))
+                <div class="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800">
+                    {{ __('shipments.cancelled_banner') }}
                 </div>
             @endif
 
@@ -163,7 +185,52 @@
                 </section>
             @endif
 
+            <section class="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-6 md:p-8">
+                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">{{ __('shipments.evidence_section_title') }}</h3>
+                @can('addEvidence', $shipment)
+                    <form action="{{ route('shipments.evidences.store', $shipment) }}" method="POST" enctype="multipart/form-data" class="mt-4 grid gap-4 md:grid-cols-12 md:items-end border border-slate-100 rounded-xl p-4 bg-slate-50/80">
+                        @csrf
+                        <div class="md:col-span-8">
+                            <x-input-label for="ev_note" :value="__('shipments.evidence_note_label')" />
+                            <textarea id="ev_note" name="note" rows="2" class="mt-1 block w-full rounded-xl border-slate-300">{{ old('note') }}</textarea>
+                            <x-input-error :messages="$errors->get('note')" class="mt-2" />
+                        </div>
+                        <div class="md:col-span-4">
+                            <x-input-label for="ev_image" :value="__('shipments.evidence_image_label')" />
+                            <input id="ev_image" name="image" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" class="mt-1 block w-full text-sm text-slate-600" />
+                            <x-input-error :messages="$errors->get('image')" class="mt-2" />
+                        </div>
+                        <div class="md:col-span-12 flex justify-end">
+                            <x-primary-button type="submit">{{ __('shipments.evidence_submit') }}</x-primary-button>
+                        </div>
+                    </form>
+                @endcan
+                @if ($shipment->relationLoaded('evidences') && $shipment->evidences->isNotEmpty())
+                    <ul class="mt-6 space-y-4 divide-y divide-slate-100">
+                        @foreach ($shipment->evidences as $evidence)
+                            <li class="pt-4 first:pt-0 flex flex-col gap-2 md:flex-row md:gap-6">
+                                <div class="flex-1 text-sm">
+                                    <p class="font-semibold text-slate-900">{{ $evidence->author?->name ?? '—' }}</p>
+                                    <p class="text-xs text-slate-500">{{ $evidence->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
+                                    @if ($evidence->note)
+                                        <p class="mt-2 text-slate-700 whitespace-pre-line">{{ $evidence->note }}</p>
+                                    @endif
+                                </div>
+                                @if ($evidence->image_path)
+                                    <div class="shrink-0">
+                                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($evidence->image_path) }}" alt="" class="max-h-48 rounded-xl border border-slate-200 shadow-sm">
+                                    </div>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="mt-4 text-sm text-slate-600">{{ __('shipments.evidence_none_yet') }}</p>
+                @endif
+            </section>
+
             {{-- Timeline --}}
+            @unless (!empty($timelineCancelled))
             <section class="rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-6 md:p-8">
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
                     <div>
@@ -239,6 +306,7 @@
                     </ol>
                 </div>
             </section>
+            @endunless
 
             {{-- Personas y rutas --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">

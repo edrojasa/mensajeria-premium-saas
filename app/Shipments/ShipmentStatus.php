@@ -18,6 +18,9 @@ final class ShipmentStatus
 
     public const INCIDENT = 'incident';
 
+    /** Envío anulado / archivado (desactivación). */
+    public const CANCELLED = 'cancelled';
+
     /** @return list<string> */
     public static function all(): array
     {
@@ -27,6 +30,7 @@ final class ShipmentStatus
             self::OUT_FOR_DELIVERY,
             self::DELIVERED,
             self::INCIDENT,
+            self::CANCELLED,
         ];
     }
 

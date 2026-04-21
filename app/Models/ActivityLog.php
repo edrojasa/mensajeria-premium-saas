@@ -16,11 +16,13 @@ class ActivityLog extends Model
         'description',
         'model_type',
         'model_id',
+        'meta',
         'created_at',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'meta' => 'array',
     ];
 
     public function organization(): BelongsTo

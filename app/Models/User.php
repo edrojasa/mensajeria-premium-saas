@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\Auth\EnsureDefaultOrganizationMembership;
 use App\Organizations\OrganizationRole;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,11 +10,27 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        static::created(function (User $user): void {
+            DB::afterCommit(function () use ($user): void {
+                $fresh = $user->fresh();
+
+                if ($fresh === null) {
+                    return;
+                }
+
+                app(EnsureDefaultOrganizationMembership::class)($fresh);
+            });
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

@@ -31,6 +31,12 @@ final class ShipmentsListing
                 'delivered_hist.delivered_logged_at',
             ]);
 
+        $query->when($request->boolean('archived'), function (Builder $q): void {
+            $q->where('shipments.status', ShipmentStatus::CANCELLED);
+        }, function (Builder $q): void {
+            $q->where('shipments.status', '!=', ShipmentStatus::CANCELLED);
+        });
+
         $query->when($request->filled('date_from'), function (Builder $q) use ($request): void {
             $q->whereDate('shipments.created_at', '>=', $request->query('date_from'));
         });

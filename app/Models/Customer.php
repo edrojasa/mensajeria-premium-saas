@@ -19,7 +19,21 @@ class Customer extends Model
         'phone',
         'email',
         'notes',
+        'is_active',
     ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\Customer>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<\App\Models\Customer>
+     */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('is_active', true);
+    }
 
     protected static function booted(): void
     {

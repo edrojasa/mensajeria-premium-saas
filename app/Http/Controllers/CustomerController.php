@@ -8,10 +8,13 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\Department;
 use App\Models\Shipment;
+use App\Http\Requests\StoreCustomerRequest;
+use App\Http\Requests\UpdateCustomerRequest;
 use App\Services\ActivityLogger;
 use App\Support\CustomersListing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -32,6 +35,7 @@ class CustomerController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         $customers = Customer::query()
+            ->when(! $request->boolean('include_inactive'), fn ($qb) => $qb->where('customers.is_active', true))
             ->when($q !== '', function ($qb) use ($q) {
                 $qb->where(function ($inner) use ($q) {
                     $inner->where('name', 'like', '%'.$q.'%')
@@ -78,24 +82,9 @@ class CustomerController extends Controller
         return view('customers.create', compact('departments'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreCustomerRequest $request): RedirectResponse
     {
-        $this->authorize('create', Customer::class);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'document' => ['nullable', 'string', 'max:64'],
-            'phone' => ['required', 'string', 'max:32'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-            'addresses' => ['nullable', 'array'],
-            'addresses.*.label' => ['required_with:addresses', 'string', 'max:64'],
-            'addresses.*.address_line' => ['required_with:addresses', 'string', 'max:500'],
-            'addresses.*.department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'addresses.*.city_id' => ['nullable', 'integer', 'exists:cities,id'],
-            'addresses.*.reference_notes' => ['nullable', 'string', 'max:500'],
-            'addresses.*.is_default' => ['nullable', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $customer = new Customer([
             'name' => $validated['name'],
@@ -103,6 +92,7 @@ class CustomerController extends Controller
             'phone' => $validated['phone'],
             'email' => $validated['email'] ?? null,
             'notes' => $validated['notes'] ?? null,
+            'is_active' => true,
         ]);
         $customer->save();
 
@@ -112,7 +102,8 @@ class CustomerController extends Controller
             $request->user(),
             AuditActions::CUSTOMER_CREATED,
             __('audit.customer_created', ['name' => $customer->name]),
-            $customer
+            $customer,
+            ['phase' => 'create']
         );
 
         return redirect()
@@ -176,24 +167,9 @@ class CustomerController extends Controller
         return view('customers.edit', compact('customer', 'departments'));
     }
 
-    public function update(Request $request, Customer $customer): RedirectResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
     {
-        $this->authorize('update', $customer);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'document' => ['nullable', 'string', 'max:64'],
-            'phone' => ['required', 'string', 'max:32'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-            'addresses' => ['nullable', 'array'],
-            'addresses.*.label' => ['required_with:addresses', 'string', 'max:64'],
-            'addresses.*.address_line' => ['required_with:addresses', 'string', 'max:500'],
-            'addresses.*.department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'addresses.*.city_id' => ['nullable', 'integer', 'exists:cities,id'],
-            'addresses.*.reference_notes' => ['nullable', 'string', 'max:500'],
-            'addresses.*.is_default' => ['nullable', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $customer->update([
             'name' => $validated['name'],
@@ -210,12 +186,81 @@ class CustomerController extends Controller
             $request->user(),
             AuditActions::CUSTOMER_UPDATED,
             __('audit.customer_updated', ['name' => $customer->name]),
-            $customer
+            $customer,
+            ['phase' => 'update']
         );
 
         return redirect()
             ->route('customers.show', $customer)
             ->with('status', __('customers.updated'));
+    }
+
+    public function deactivate(Request $request, Customer $customer): RedirectResponse
+    {
+        $this->authorize('deactivate', $customer);
+
+        if (! $customer->is_active) {
+            return redirect()
+                ->route('customers.index')
+                ->with('status', __('customers.deactivated_success'));
+        }
+
+        $updated = Customer::query()
+            ->whereKey($customer->id)
+            ->where('organization_id', $customer->organization_id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        if ($updated !== 1) {
+            return redirect()
+                ->route('customers.index')
+                ->withErrors(__('customers.deactivate_failed'));
+        }
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::CUSTOMER_DEACTIVATED,
+            __('audit.customer_deactivated', ['name' => $customer->name]),
+            $customer,
+            ['action' => 'deactivate_soft']
+        );
+
+        return redirect()
+            ->route('customers.index')
+            ->with('status', __('customers.deactivated_success'));
+    }
+
+    public function forceDestroy(Request $request, Customer $customer): RedirectResponse
+    {
+        $this->authorize('forceDestroy', $customer);
+
+        if ($customer->shipments()->exists()) {
+            return redirect()
+                ->route('customers.show', $customer)
+                ->withErrors(__('customers.force_delete_blocked_shipments'));
+        }
+
+        DB::transaction(function () use ($customer, $request): void {
+            $customer->addresses()->delete();
+
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::CUSTOMER_FORCE_DELETED,
+                __('audit.customer_force_deleted', ['name' => $customer->name]),
+                null,
+                [
+                    'model' => Customer::class,
+                    'record_id' => $customer->id,
+                    'action' => 'delete_force',
+                ]
+            );
+
+            $customer->delete();
+        });
+
+        return redirect()
+            ->route('customers.index')
+            ->with('status', __('customers.force_deleted_success'));
     }
 
     /**

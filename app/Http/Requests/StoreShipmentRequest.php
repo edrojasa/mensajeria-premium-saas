@@ -29,7 +29,9 @@ class StoreShipmentRequest extends FormRequest
             'customer_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('customers', 'id')->where(fn ($q) => $q->where('organization_id', $tenantId)),
+                Rule::exists('customers', 'id')->where(
+                    fn ($q) => $q->where('organization_id', $tenantId)->where('is_active', true)
+                ),
             ],
             'customer_address_id' => ['nullable', 'integer'],
 

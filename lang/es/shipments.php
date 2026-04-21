@@ -79,7 +79,7 @@ return [
     'department' => 'Departamento',
     'select_department' => 'Seleccione departamento',
     'select_city' => 'Seleccione ciudad',
-    'departments_missing_hint' => 'No hay departamentos cargados. Ejecute la migración y «php artisan db:seed --class=ColombiaGeoSeeder».',
+    'departments_missing_hint' => 'No hay departamentos cargados. Ejecute «php artisan db:seed» (incluye departamentos y ciudades de Colombia) o «php artisan db:seed --class=DepartmentSeeder».',
     'postal_code' => 'Código postal',
 
     'history_section' => 'Historial de estados',
@@ -113,11 +113,12 @@ return [
     'back_to_list' => '← Volver al listado',
 
     'status' => [
-        'received' => 'Recibido',
-        'in_transit' => 'En tránsito',
+        'received' => 'Pendiente',
+        'in_transit' => 'En ruta',
         'out_for_delivery' => 'En reparto',
         'delivered' => 'Entregado',
         'incident' => 'Incidencia',
+        'cancelled' => 'Cancelado',
     ],
 
     'show_summary_title' => 'Resumen del envío',
@@ -140,4 +141,27 @@ return [
     'guide_party_label' => 'Empresa operadora',
     'guide_qr_label' => 'Seguimiento en línea',
     'guide_printed_at' => 'Documento generado',
+
+    'download_report_pdf' => 'Descargar informe PDF',
+    'report_pdf_title' => 'Informe de envío',
+    'report_generated_at' => 'Generado:',
+    'deactivate_action' => 'Desactivar envío',
+    'confirm_deactivate' => '¿Archivar este envío como cancelado? Dejará de aparecer en el listado activo.',
+    'deactivated_success' => 'Envío marcado como cancelado.',
+    'deactivate_not_allowed_delivered' => 'No se puede desactivar un envío ya entregado.',
+    'deactivate_system_note' => 'Envío archivado por usuario del sistema.',
+    'cancelled_banner' => 'Este envío está cancelado y solo aparece en el histórico de envíos cancelados.',
+
+    'evidence_section_title' => 'Evidencias y notas de campo',
+    'evidence_note_label' => 'Nota',
+    'evidence_image_label' => 'Foto (JPG o PNG, máx. 2 MB)',
+    'evidence_submit' => 'Registrar evidencia',
+    'evidence_saved' => 'Evidencia registrada.',
+    'evidence_note_or_image_required' => 'Indica una nota o adjunta una imagen.',
+    'evidence_empty' => 'Sin evidencias registradas.',
+    'evidence_none_yet' => 'Aún no hay evidencias registradas.',
+    'evidence_empty_pdf' => 'Sin evidencias.',
+    'filter_archived' => 'Histórico cancelados',
+    'messenger_cannot_cancel' => 'Los mensajeros no pueden cancelar envíos.',
+    'evidence_table_missing' => 'La tabla de evidencias no existe. Ejecuta las migraciones pendientes.',
 ];

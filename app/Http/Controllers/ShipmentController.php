@@ -32,6 +32,7 @@ use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -48,7 +49,7 @@ class ShipmentController extends Controller
 
         $shipments = ShipmentsListing::filteredQuery($request)->paginate(15)->withQueryString();
 
-        $customers = Customer::query()->orderBy('name')->get(['id', 'name']);
+        $customers = Customer::query()->active()->orderBy('name')->get(['id', 'name']);
         $messengers = $this->messengersForTenant();
 
         $statuses = collect(ShipmentStatus::all())
@@ -70,6 +71,7 @@ class ShipmentController extends Controller
         $messengers = $this->messengersForTenant();
 
         $initialCustomers = Customer::query()
+            ->active()
             ->orderBy('name')
             ->limit(40)
             ->get(['id', 'customer_code', 'name', 'phone', 'email']);
@@ -157,6 +159,7 @@ class ShipmentController extends Controller
         $shipment->load(['customer.addresses']);
 
         $initialCustomers = Customer::query()
+            ->active()
             ->orderBy('name')
             ->limit(40)
             ->get(['id', 'customer_code', 'name', 'phone', 'email']);
@@ -236,7 +239,18 @@ class ShipmentController extends Controller
     {
         $this->authorize('view', $shipment);
 
-        $shipment->load(['statusHistories.changedBy', 'creator', 'customer', 'assignedCourier']);
+        $relations = [
+            'statusHistories.changedBy',
+            'creator',
+            'customer',
+            'assignedCourier',
+        ];
+
+        if (Schema::hasTable('shipment_evidences')) {
+            $relations[] = 'evidences.author';
+        }
+
+        $shipment->load($relations);
 
         $allowedKeys = array_values(array_unique(array_merge(
             [$shipment->status],
@@ -259,7 +273,86 @@ class ShipmentController extends Controller
             'statusOptions' => $statusOptions,
             'timelineSteps' => $this->buildTimelineSteps($shipment),
             'timelineProgressPercent' => $this->timelineProgressPercent($shipment),
+            'timelineCancelled' => $shipment->status === ShipmentStatus::CANCELLED,
         ]);
+    }
+
+    public function deactivate(
+        Request $request,
+        Shipment $shipment,
+        ShipmentTransitionService $transitionService
+    ): RedirectResponse {
+        $this->authorize('deactivate', $shipment);
+
+        if ($shipment->status === ShipmentStatus::DELIVERED) {
+            return redirect()
+                ->route('shipments.show', $shipment)
+                ->withErrors(__('shipments.deactivate_not_allowed_delivered'));
+        }
+
+        DB::transaction(function () use ($shipment, $transitionService, $request): void {
+            if ($shipment->status !== ShipmentStatus::CANCELLED) {
+                $transitionService->transitionTo(
+                    $shipment,
+                    ShipmentStatus::CANCELLED,
+                    __('shipments.deactivate_system_note'),
+                    $request->user()
+                );
+                $shipment->refresh();
+            }
+        });
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::SHIPMENT_DEACTIVATED,
+            __('audit.shipment_deactivated', ['tracking' => $shipment->tracking_number]),
+            $shipment,
+            ['action' => 'cancel_status']
+        );
+
+        return redirect()
+            ->route('shipments.index')
+            ->with('status', __('shipments.deactivated_success'));
+    }
+
+    public function reportPdf(Shipment $shipment): Response
+    {
+        $this->authorize('viewReport', $shipment);
+
+        if (! Schema::hasTable('shipment_evidences')) {
+            return redirect()
+                ->route('shipments.show', $shipment)
+                ->withErrors(__('shipments.evidence_table_missing'));
+        }
+
+        $shipment->load([
+            'organization',
+            'customer',
+            'statusHistories.changedBy',
+            'evidences.author',
+        ]);
+
+        $evidenceImages = [];
+        foreach ($shipment->evidences as $evidence) {
+            if ($evidence->image_path) {
+                $fullPath = storage_path('app/public/'.$evidence->image_path);
+                if (is_readable($fullPath)) {
+                    $mime = @mime_content_type($fullPath) ?: 'image/jpeg';
+                    $evidenceImages[$evidence->id] = [
+                        'data' => base64_encode((string) file_get_contents($fullPath)),
+                        'mime' => $mime,
+                    ];
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('shipments.pdf.report', [
+            'shipment' => $shipment,
+            'evidenceImages' => $evidenceImages,
+            'printedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('informe-envio-'.$shipment->tracking_number.'.pdf');
     }
 
     public function guide(Shipment $shipment): View
@@ -307,6 +400,10 @@ class ShipmentController extends Controller
      */
     private function buildTimelineSteps(Shipment $shipment): array
     {
+        if ($shipment->status === ShipmentStatus::CANCELLED) {
+            return [];
+        }
+
         $keys = [
             ShipmentStatus::RECEIVED,
             ShipmentStatus::IN_TRANSIT,
@@ -353,6 +450,10 @@ class ShipmentController extends Controller
 
     private function timelineProgressPercent(Shipment $shipment): int
     {
+        if ($shipment->status === ShipmentStatus::CANCELLED) {
+            return 0;
+        }
+
         if ($shipment->status === ShipmentStatus::DELIVERED) {
             return 100;
         }
@@ -364,6 +465,10 @@ class ShipmentController extends Controller
 
     private function resolveTimelineRank(Shipment $shipment): int
     {
+        if ($shipment->status === ShipmentStatus::CANCELLED) {
+            return 0;
+        }
+
         $mainFlow = [
             ShipmentStatus::RECEIVED,
             ShipmentStatus::IN_TRANSIT,

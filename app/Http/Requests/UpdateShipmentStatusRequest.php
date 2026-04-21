@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Shipment;
+use App\Shipments\ShipmentStatus;
 use App\Shipments\ShipmentTransitionRules;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,6 +31,13 @@ class UpdateShipmentStatusRequest extends FormRequest
             [$shipment->status],
             ShipmentTransitionRules::allowedTargets($shipment->status)
         )));
+
+        if ($this->user()->isMessenger()) {
+            $allowed = array_values(array_filter(
+                $allowed,
+                fn (string $s) => $s !== ShipmentStatus::CANCELLED
+            ));
+        }
 
         return [
             'status' => [

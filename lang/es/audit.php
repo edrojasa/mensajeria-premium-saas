@@ -9,6 +9,11 @@ return [
     'customer_updated' => 'Cliente actualizado: :name',
     'user_created' => 'Usuario creado: :name (:email)',
     'user_updated' => 'Usuario actualizado: :name',
+    'customer_deactivated' => 'Cliente desactivado: :name',
+    'customer_force_deleted' => 'Cliente eliminado definitivamente: :name',
+    'shipment_deactivated' => 'Envío cancelado/archivado: :tracking',
+    'shipment_evidence_uploaded' => 'Evidencia registrada en envío :tracking',
+    'user_removed_from_org' => 'Usuario retirado de la organización: :name',
 
     /**
      * Etiquetas legibles para la columna "Acción" en auditoría (clave = valor guardado en BD).
@@ -23,5 +28,10 @@ return [
         'customer.updated' => 'Actualización de cliente',
         'user.created' => 'Creación de usuario',
         'user.updated' => 'Actualización de usuario',
+        'customer.deactivated' => 'Desactivación de cliente',
+        'customer.force_deleted' => 'Eliminación definitiva de cliente',
+        'shipment.deactivated' => 'Cancelación / archivo de envío',
+        'shipment.evidence_uploaded' => 'Evidencia de envío',
+        'user.force_deleted' => 'Eliminación / retiro de usuario',
     ],
 ];

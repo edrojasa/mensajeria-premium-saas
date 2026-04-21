@@ -55,6 +55,12 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="md:col-span-2 lg:col-span-3 xl:col-span-2 flex flex-col gap-2">
+                        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                            <input type="checkbox" name="archived" value="1" @checked(request()->boolean('archived')) />
+                            {{ __('shipments.filter_archived') }}
+                        </label>
+                    </div>
                     <div class="flex items-end gap-2 md:col-span-2 lg:col-span-3 xl:col-span-1 xl:flex-col xl:items-stretch">
                         <x-primary-button type="submit" class="w-full justify-center rounded-xl">{{ __('shipments.filter_apply') }}</x-primary-button>
                         <a href="{{ route('shipments.index') }}" class="inline-flex justify-center items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{{ __('shipments.filter_clear') }}</a>

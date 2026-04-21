@@ -14,6 +14,9 @@ final class CustomersListing
 
         return Customer::query()
             ->withCount('shipments')
+            ->when(! $request->boolean('inactive'), function (Builder $qb): void {
+                $qb->where('customers.is_active', true);
+            })
             ->when($q !== '', function (Builder $qb) use ($q): void {
                 $like = '%'.$q.'%';
                 $qb->where(function ($inner) use ($like): void {

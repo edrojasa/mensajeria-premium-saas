@@ -20,6 +20,19 @@ final class ShipmentTransitionRules
             return false;
         }
 
+        if ($to === ShipmentStatus::CANCELLED) {
+            return in_array($from, [
+                ShipmentStatus::RECEIVED,
+                ShipmentStatus::IN_TRANSIT,
+                ShipmentStatus::OUT_FOR_DELIVERY,
+                ShipmentStatus::INCIDENT,
+            ], true);
+        }
+
+        if ($from === ShipmentStatus::CANCELLED) {
+            return false;
+        }
+
         if ($to === ShipmentStatus::INCIDENT) {
             return true;
         }

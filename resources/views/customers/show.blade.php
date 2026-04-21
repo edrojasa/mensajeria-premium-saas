@@ -7,8 +7,28 @@
                 <p class="mt-1 text-sm text-slate-600">{{ __('customers.field_phone') }}: {{ $customer->phone }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('shipments.create') }}?customer_id={{ $customer->id }}" class="inline-flex items-center rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/25 hover:bg-brand-700">{{ __('customers.create_shipment_for') }}</a>
-                <a href="{{ route('customers.edit', $customer) }}" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50">{{ __('customers.edit_action') }}</a>
+                @if ($customer->is_active)
+                    <a href="{{ route('shipments.create') }}?customer_id={{ $customer->id }}" class="inline-flex items-center rounded-2xl bg-brand-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/25 hover:bg-brand-700">{{ __('customers.create_shipment_for') }}</a>
+                @endif
+                @can('update', $customer)
+                    <a href="{{ route('customers.edit', $customer) }}" class="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50">{{ __('customers.edit_action') }}</a>
+                @endcan
+                @can('deactivate', $customer)
+                    @if ($customer->is_active)
+                        <form action="{{ route('customers.deactivate', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.deactivate_confirm')));">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="inline-flex items-center rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-900 hover:bg-amber-100">{{ __('customers.action_deactivate') }}</button>
+                        </form>
+                    @endif
+                @endcan
+                @can('forceDestroy', $customer)
+                    <form action="{{ route('customers.force-destroy', $customer) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('customers.force_delete_confirm')));">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="inline-flex items-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-900 hover:bg-red-100">{{ __('customers.action_force_delete') }}</button>
+                    </form>
+                @endcan
             </div>
         </div>
     </x-slot>

@@ -31,6 +31,7 @@ class OrganizationUserController extends Controller
         return view('users.index', [
             'orgUsers' => $users,
             'canManage' => auth()->user()->canManageOrganizationUsers(),
+            'canAdmin' => OrganizationRole::hasFullAccess(auth()->user()->roleInCurrentOrganization()),
             'roleFilter' => $request->query('role'),
         ]);
     }
@@ -116,5 +117,47 @@ class OrganizationUserController extends Controller
         );
 
         return back()->with('status', __('users.updated_success'));
+    }
+
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        abort_unless(
+            OrganizationRole::hasFullAccess(auth()->user()->roleInCurrentOrganization()),
+            403
+        );
+
+        $orgId = tenant_id();
+        if ($orgId === null || ! $user->belongsToOrganization($orgId)) {
+            abort(404);
+        }
+
+        if ($request->user()->id === $user->id) {
+            return back()->withErrors(__('users.cannot_delete_self'));
+        }
+
+        DB::transaction(function () use ($request, $user, $orgId): void {
+            $user->organizations()->detach($orgId);
+            $user->unsetRelation('organizations');
+
+            ActivityLogger::log(
+                $request->user(),
+                AuditActions::USER_FORCE_DELETED,
+                __('audit.user_removed_from_org', ['name' => $user->name]),
+                null,
+                [
+                    'removed_user_id' => $user->id,
+                    'organization_id' => $orgId,
+                    'action' => 'detach_or_delete',
+                ]
+            );
+
+            if (! $user->organizations()->exists()) {
+                $user->delete();
+            }
+        });
+
+        return redirect()
+            ->route('users.index')
+            ->with('status', __('users.removed_success'));
     }
 }

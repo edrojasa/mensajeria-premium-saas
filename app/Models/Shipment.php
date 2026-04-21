@@ -89,6 +89,11 @@ class Shipment extends Model
         return $this->hasMany(ShipmentStatusHistory::class)->orderBy('created_at');
     }
 
+    public function evidences(): HasMany
+    {
+        return $this->hasMany(ShipmentEvidence::class)->orderByDesc('created_at');
+    }
+
     public function statusLabel(): string
     {
         return ShipmentStatus::label($this->status);

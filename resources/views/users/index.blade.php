@@ -99,8 +99,15 @@
                                             {{ __('users.active') }}
                                         </label>
                                     </td>
-                                    <td class="px-4 py-4 text-right">
+                                    <td class="px-4 py-4 text-right space-x-2">
                                         <button type="submit" form="{{ $fid }}" class="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-brand-700">{{ __('users.save') }}</button>
+                                        @if (($canAdmin ?? false) && $user->id !== auth()->id())
+                                            <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('users.delete_from_org_confirm')));">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="inline-flex items-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-800 hover:bg-red-100">{{ __('users.delete_from_org') }}</button>
+                                            </form>
+                                        @endif
                                     </td>
                                 @else
                                     <td class="px-4 py-4 text-slate-600">{{ $user->phone ?? '—' }}</td>

@@ -51,7 +51,10 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user) use ($role) {
             $organization = \App\Models\Organization::factory()->create();
-            $user->organizations()->attach($organization->id, ['role' => $role]);
+            $user->organizations()->attach($organization->id, [
+                'role' => $role,
+                'is_active' => true,
+            ]);
         });
     }
 }
