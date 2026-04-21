@@ -94,6 +94,16 @@ class FinancialReportsController extends Controller
 
     public function exportPdf(Request $request): Response
     {
+        return $this->exportMovementsPdf($request);
+    }
+
+    public function exportExcel(Request $request): BinaryFileResponse
+    {
+        return $this->exportMovementsExcel($request);
+    }
+
+    public function exportMovementsPdf(Request $request): Response
+    {
         abort_unless($request->user()?->canAccessFinancialModule(), 403);
 
         $rows = FinancialMovements::mapShipmentsToMovements(
@@ -112,7 +122,7 @@ class FinancialReportsController extends Controller
         return $pdf->download('reporte-financiero-'.now()->format('Y-m-d_His').'.pdf');
     }
 
-    public function exportExcel(Request $request): BinaryFileResponse
+    public function exportMovementsExcel(Request $request): BinaryFileResponse
     {
         abort_unless($request->user()?->canAccessFinancialModule(), 403);
 

@@ -6,7 +6,7 @@
     $navActive = '!text-white bg-white/15 shadow-inner';
     $operationNavActive = auth()->check() && Auth::user()->isMessenger()
         ? request()->routeIs('dashboard', 'courier.shipments.*')
-        : request()->routeIs('dashboard', 'shipments.*', 'customers.*', 'users.*', 'logs.*');
+        : request()->routeIs('dashboard', 'shipments.*', 'customers.*', 'users.*', 'logs.*', 'operations.messengers.report*');
     $financeNavActive = request()->routeIs('financial.reports', 'financial.receivables', 'service-rates.*');
 @endphp
 
@@ -69,6 +69,9 @@
                                         @endif
                                         @if (Auth::user()->canViewAuditLogs())
                                             <x-dropdown-link href="{{ route('logs.index') }}">{{ __('logs.menu') }}</x-dropdown-link>
+                                        @endif
+                                        @if (Auth::user()->canOperateLogistics())
+                                            <x-dropdown-link href="{{ route('operations.messengers.report') }}">Reporte de Mensajeros</x-dropdown-link>
                                         @endif
                                     </x-slot>
                                 </x-dropdown>
@@ -181,6 +184,9 @@
                             @endif
                             @if (Auth::user()->canViewAuditLogs())
                                 <a href="{{ route('logs.index') }}" class="block rounded-lg py-2.5 pl-2 text-sm font-semibold text-white/90 hover:bg-white/10">{{ __('logs.menu') }}</a>
+                            @endif
+                            @if (Auth::user()->canOperateLogistics())
+                                <a href="{{ route('operations.messengers.report') }}" class="block rounded-lg py-2.5 pl-2 text-sm font-semibold text-white/90 hover:bg-white/10">Reporte de Mensajeros</a>
                             @endif
                         </div>
                     </div>

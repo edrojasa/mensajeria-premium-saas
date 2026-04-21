@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrganizationSwitcherController;
 use App\Http\Controllers\OrganizationUserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MessengerReportController;
 use App\Http\Controllers\GeoController;
 use App\Http\Controllers\PublicTrackingController;
 use App\Http\Controllers\ServiceRateController;
@@ -128,6 +129,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/financial-reports/excel', [FinancialReportsController::class, 'exportExcel'])
         ->name('financial.reports.excel');
 
+    Route::get('/financial/movements/pdf', [FinancialReportsController::class, 'exportMovementsPdf'])
+        ->name('financial.movements.pdf');
+
+    Route::get('/financial/movements/excel', [FinancialReportsController::class, 'exportMovementsExcel'])
+        ->name('financial.movements.excel');
+
     Route::get('/financial/receivables', AccountsReceivableController::class)
         ->name('financial.receivables');
 
@@ -136,6 +143,15 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/financial/receivables/excel', [AccountsReceivableController::class, 'exportExcel'])
         ->name('financial.receivables.excel');
+
+    Route::get('/operations/messengers-report', [MessengerReportController::class, 'index'])
+        ->name('operations.messengers.report');
+
+    Route::get('/operations/messengers-report/pdf', [MessengerReportController::class, 'exportPdf'])
+        ->name('operations.messengers.report.pdf');
+
+    Route::get('/operations/messengers-report/excel', [MessengerReportController::class, 'exportExcel'])
+        ->name('operations.messengers.report.excel');
 
     Route::resource('service-rates', ServiceRateController::class)->except(['show']);
 

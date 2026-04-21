@@ -18,8 +18,8 @@
                     <p class="mt-2 text-2xl font-bold text-amber-700">${{ number_format($totalNoCustomer, 2, ',', '.') }}</p>
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 flex items-end justify-end gap-2">
-                    <a href="{{ route('financial.receivables.pdf') }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
-                    <a href="{{ route('financial.receivables.excel') }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
+                    <a href="{{ route('financial.receivables.pdf') }}" class="btn btn-danger inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
+                    <a href="{{ route('financial.receivables.excel') }}" class="btn btn-success inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
                 </div>
             </div>
 

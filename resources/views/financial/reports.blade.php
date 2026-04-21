@@ -41,8 +41,8 @@
                         <p class="text-sm text-slate-600">{{ __('finance.movements_subtitle') }}</p>
                     </div>
                     <div class="flex gap-2">
-                        <a href="{{ route('financial.reports.pdf', request()->query()) }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
-                        <a href="{{ route('financial.reports.excel', request()->query()) }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
+                        <a href="{{ route('financial.movements.pdf', request()->query()) }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
+                        <a href="{{ route('financial.movements.excel', request()->query()) }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
                     </div>
                 </div>
 
