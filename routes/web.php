@@ -83,6 +83,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::resource('customers', CustomerController::class);
 
+    Route::get('/customers/{customer}/financial/pdf', [CustomerController::class, 'financialPdf'])
+        ->name('customers.financial.pdf');
+
+    Route::get('/customers/{customer}/financial/excel', [CustomerController::class, 'financialExcel'])
+        ->name('customers.financial.excel');
+
     Route::get('/users', [OrganizationUserController::class, 'index'])
         ->name('users.index');
 
@@ -115,6 +121,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/financial-reports', FinancialReportsController::class)
         ->name('financial.reports');
+
+    Route::get('/financial-reports/pdf', [FinancialReportsController::class, 'exportPdf'])
+        ->name('financial.reports.pdf');
+
+    Route::get('/financial-reports/excel', [FinancialReportsController::class, 'exportExcel'])
+        ->name('financial.reports.excel');
 
     Route::get('/financial/receivables', AccountsReceivableController::class)
         ->name('financial.receivables');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditActions;
+use App\Exports\FinancialMovementsExport;
 use App\Finance\PaymentStatus;
 use App\Models\City;
 use App\Models\Customer;
@@ -12,9 +13,14 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Services\ActivityLogger;
 use App\Support\CustomersListing;
+use App\Support\FinancialMovements;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -130,24 +136,32 @@ class CustomerController extends Controller
         $activeTab = ($canFinance && $request->query('tab') === 'financial') ? 'financial' : 'shipments';
 
         $shipments = Shipment::query()
+            ->where('organization_id', $customer->organization_id)
             ->where('customer_id', $customer->id)
             ->latest()
-            ->paginate(10)
+            ->paginate(10, ['*'], 'shipments_page')
             ->withQueryString();
 
         $financialBilled = Shipment::query()
+            ->where('organization_id', $customer->organization_id)
             ->where('customer_id', $customer->id)
             ->sum('cost');
 
         $financialPaid = Shipment::query()
+            ->where('organization_id', $customer->organization_id)
             ->where('customer_id', $customer->id)
             ->where('payment_status', PaymentStatus::PAID)
             ->sum('paid_amount');
 
         $financialBalance = Shipment::query()
+            ->where('organization_id', $customer->organization_id)
             ->where('customer_id', $customer->id)
             ->get()
             ->sum(fn (Shipment $s) => $s->balanceDue());
+
+        $financialMovements = $canFinance
+            ? FinancialMovements::paginated($request, (int) $customer->id, 'financial_page')
+            : null;
 
         return view('customers.show', compact(
             'customer',
@@ -156,8 +170,46 @@ class CustomerController extends Controller
             'financialPaid',
             'financialBalance',
             'activeTab',
-            'canFinance'
+            'canFinance',
+            'financialMovements'
         ));
+    }
+
+    public function financialPdf(Request $request, Customer $customer): Response
+    {
+        $this->authorize('view', $customer);
+        abort_unless($request->user()?->canAccessFinancialModule(), 403);
+
+        $rows = FinancialMovements::mapShipmentsToMovements(
+            FinancialMovements::filteredShipmentsQuery($request, (int) $customer->id)->get()
+        );
+
+        $pdf = Pdf::loadView('customers.pdf.financial-movements', [
+            'title' => __('finance.customer_finance_title').' - '.$customer->name,
+            'generatedAt' => now(),
+            'customer' => $customer,
+            'rows' => $rows,
+            'total' => (float) $rows->sum('value'),
+            'paidCount' => (int) $rows->where('status', PaymentStatus::PAID)->count(),
+            'pendingCount' => (int) $rows->where('status', PaymentStatus::PENDING)->count(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('cliente-finanzas-'.$customer->id.'-'.now()->format('Y-m-d_His').'.pdf');
+    }
+
+    public function financialExcel(Request $request, Customer $customer): BinaryFileResponse
+    {
+        $this->authorize('view', $customer);
+        abort_unless($request->user()?->canAccessFinancialModule(), 403);
+
+        $rows = FinancialMovements::mapShipmentsToMovements(
+            FinancialMovements::filteredShipmentsQuery($request, (int) $customer->id)->get()
+        );
+
+        return Excel::download(
+            new FinancialMovementsExport($rows),
+            'cliente-finanzas-'.$customer->id.'-'.now()->format('Y-m-d_His').'.xlsx'
+        );
     }
 
     public function edit(Customer $customer): View

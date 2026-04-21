@@ -132,37 +132,60 @@
                             </div>
                         </dl>
                     </div>
-                    <p class="mt-4 text-sm font-semibold text-slate-800">{{ __('finance.customer_financial_shipments_detail') }}</p>
+                    <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                        <p class="text-sm font-semibold text-slate-800">{{ __('finance.customer_financial_shipments_detail') }}</p>
+                        <div class="flex gap-2">
+                            <a href="{{ route('customers.financial.pdf', ['customer' => $customer] + request()->query()) }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.pdf') }}</a>
+                            <a href="{{ route('customers.financial.excel', ['customer' => $customer] + request()->query()) }}" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">{{ __('exports.excel') }}</a>
+                        </div>
+                    </div>
+                    <form method="GET" action="{{ route('customers.show', $customer) }}" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="hidden" name="tab" value="financial">
+                        <input type="date" name="from" value="{{ request('from') }}" class="rounded-xl border-slate-300" />
+                        <input type="date" name="to" value="{{ request('to') }}" class="rounded-xl border-slate-300" />
+                        <select name="status" class="rounded-xl border-slate-300">
+                            <option value="">{{ __('finance.filter_status') }}</option>
+                            <option value="pending" @selected(request('status') === 'pending')>{{ __('finance.payment_statuses.pending') }}</option>
+                            <option value="paid" @selected(request('status') === 'paid')>{{ __('finance.payment_statuses.paid') }}</option>
+                        </select>
+                        <input type="text" name="q" value="{{ request('q') }}" placeholder="{{ __('finance.filter_search') }}" class="rounded-xl border-slate-300" />
+                        <div class="md:col-span-4 flex gap-2">
+                            <button type="submit" class="inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">{{ __('shipments.filter_apply') }}</button>
+                            <a href="{{ route('customers.show', ['customer' => $customer, 'tab' => 'financial']) }}" class="inline-flex rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">{{ __('shipments.filter_clear') }}</a>
+                        </div>
+                    </form>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead>
                             <tr class="bg-slate-50">
+                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">Fecha</th>
                                 <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('shipments.order_number') }}</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('shipments.current_status') }}</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('exports.shipments_col_cost') }}</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('exports.shipments_col_payment_type') }}</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">{{ __('exports.shipments_col_payment_status') }}</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">Valor</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">Usuario</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-600">Tipo</th>
                                 <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-600">{{ __('shipments.actions_column') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
-                            @forelse ($shipments as $shipment)
+                            @forelse ($financialMovements ?? [] as $movement)
                                 <tr>
-                                    <td class="px-6 py-3 font-mono font-bold text-brand-900">{{ $shipment->tracking_number }}</td>
-                                    <td class="px-6 py-3"><x-shipment-status-badge :status="$shipment->status" /></td>
-                                    <td class="px-6 py-3 text-right text-slate-800">{{ $shipment->cost !== null ? '$'.number_format((float) $shipment->cost, 2, ',', '.') : '—' }}</td>
-                                    <td class="px-6 py-3 text-slate-700">{{ $shipment->payment_type ? \App\Finance\PaymentType::label($shipment->payment_type) : '—' }}</td>
-                                    <td class="px-6 py-3 text-slate-700">{{ $shipment->payment_status ? \App\Finance\PaymentStatus::label($shipment->payment_status) : '—' }}</td>
-                                    <td class="px-6 py-3 text-right"><a href="{{ route('shipments.show', $shipment) }}" class="font-bold text-brand-600">{{ __('customers.view_detail') }}</a></td>
+                                    <td class="px-6 py-3">{{ optional($movement['date'])->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</td>
+                                    <td class="px-6 py-3 font-mono font-bold text-brand-900">{{ $movement['tracking'] }}</td>
+                                    <td class="px-6 py-3 text-right text-slate-800">${{ number_format((float) $movement['value'], 2, ',', '.') }}</td>
+                                    <td class="px-6 py-3 text-slate-700">{{ \App\Finance\PaymentStatus::label($movement['status']) }}</td>
+                                    <td class="px-6 py-3 text-slate-700">{{ $movement['user'] }}</td>
+                                    <td class="px-6 py-3 text-slate-700">{{ $movement['type'] === 'pago' ? __('finance.type_payment') : __('finance.type_charge') }}</td>
+                                    <td class="px-6 py-3 text-right"><a href="{{ route('shipments.show', $movement['shipment']) }}" class="font-bold text-brand-600">{{ __('customers.view_detail') }}</a></td>
                                 </tr>
                             @empty
-                                <tr><td colspan="6" class="px-6 py-8 text-center text-slate-600">{{ __('shipments.empty') }}</td></tr>
+                                <tr><td colspan="7" class="px-6 py-8 text-center text-slate-600">{{ __('shipments.empty') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-                <div class="px-6 py-4">{{ $shipments->links() }}</div>
+                <div class="px-6 py-4">{{ $financialMovements?->links() }}</div>
             @endif
         </div>
     </div>

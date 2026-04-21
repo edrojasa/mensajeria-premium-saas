@@ -17,9 +17,14 @@ class AccountsReceivableController extends Controller
     public function __invoke(Request $request): View
     {
         abort_unless($request->user()?->canAccessFinancialModule(), 403);
+        $orgId = tenant_id();
+        if ($orgId === null) {
+            abort(403);
+        }
 
         $shipments = Shipment::query()
             ->with(['customer:id,name,customer_code'])
+            ->where('organization_id', $orgId)
             ->where('payment_status', PaymentStatus::PENDING)
             ->orderByDesc('created_at')
             ->get();
@@ -68,9 +73,14 @@ class AccountsReceivableController extends Controller
     public function exportExcel(Request $request): BinaryFileResponse
     {
         abort_unless($request->user()?->canAccessFinancialModule(), 403);
+        $orgId = tenant_id();
+        if ($orgId === null) {
+            abort(403);
+        }
 
         $rows = Shipment::query()
             ->with(['customer:id,name,customer_code'])
+            ->where('organization_id', $orgId)
             ->where('payment_status', PaymentStatus::PENDING)
             ->orderByDesc('created_at');
 
