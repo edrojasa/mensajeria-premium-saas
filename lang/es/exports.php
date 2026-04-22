@@ -43,5 +43,6 @@ return [
     'users_col_email' => 'Correo',
     'users_col_phone' => 'Teléfono',
     'users_col_role' => 'Rol',
-    'users_col_active' => 'Estado',
+    'users_col_active' => 'Estado en org.',
+    'users_col_account' => 'Cuenta',
 ];

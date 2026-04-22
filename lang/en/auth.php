@@ -17,4 +17,6 @@ return [
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
 
+    'account_suspended' => 'Your account has been suspended. Please contact the administrator.',
+
 ];

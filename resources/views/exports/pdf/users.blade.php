@@ -14,6 +14,7 @@
     @include('exports.pdf._header', ['title' => $title, 'generatedAt' => $generatedAt])
 
     @php
+        use App\Enums\UserAccountStatus;
         use App\Organizations\OrganizationRole;
     @endphp
 
@@ -25,6 +26,7 @@
                 <th>{{ __('exports.users_col_phone') }}</th>
                 <th>{{ __('exports.users_col_role') }}</th>
                 <th>{{ __('exports.users_col_active') }}</th>
+                <th>{{ __('exports.users_col_account') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -32,13 +34,15 @@
                 @php
                     $org = $user->organizations->firstWhere('id', $organizationId);
                     $pivot = $org?->pivot;
+                    $acct = $user->status ?? UserAccountStatus::ACTIVE;
                 @endphp
                 <tr>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->phone ?? '—' }}</td>
                     <td>{{ $pivot ? OrganizationRole::label((string) $pivot->role) : '—' }}</td>
-                    <td>{{ $pivot && $pivot->is_active ? __('users.active') : __('users.inactive') }}</td>
+                    <td>{{ $pivot && $pivot->is_active ? __('users.active_in_org') : __('users.inactive_in_org') }}</td>
+                    <td>{{ UserAccountStatus::label($acct) }}</td>
                 </tr>
             @endforeach
         </tbody>

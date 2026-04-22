@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Enums\UserAccountStatus as AccountStatus;
 use App\Organizations\OrganizationRole;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -27,6 +28,7 @@ class OrganizationUsersExport implements FromQuery, WithHeadings, WithMapping
             __('exports.users_col_phone'),
             __('exports.users_col_role'),
             __('exports.users_col_active'),
+            __('exports.users_col_account'),
         ];
     }
 
@@ -44,7 +46,8 @@ class OrganizationUsersExport implements FromQuery, WithHeadings, WithMapping
             $user->email,
             $user->phone ?? '—',
             $pivot ? OrganizationRole::label((string) $pivot->role) : '—',
-            $pivot && $pivot->is_active ? __('users.active') : __('users.inactive'),
+            $pivot && $pivot->is_active ? __('users.active_in_org') : __('users.inactive_in_org'),
+            AccountStatus::label($user->status),
         ];
     }
 }

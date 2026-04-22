@@ -61,7 +61,8 @@
                             <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_email') }}</th>
                             <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_phone') }}</th>
                             <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_role') }}</th>
-                            <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_status') }}</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_org_status') }}</th>
+                            <th class="px-4 py-4 text-left text-xs font-bold uppercase text-slate-600">{{ __('users.column_account_status') }}</th>
                             @if ($canManage)
                                 <th class="px-4 py-4 text-right text-xs font-bold uppercase text-slate-600">{{ __('users.actions') }}</th>
                             @endif
@@ -71,36 +72,36 @@
                         @foreach ($orgUsers as $user)
                             @php
                                 $org = $user->organizations->first();
-                                $pivot = $org?->pivot;
-                                $fid = 'org-user-form-'.$user->id;
+                                $pivot = $org !== null ? $org->pivot : null;
                             @endphp
                             <tr class="hover:bg-brand-50/40 align-top">
                                 <td class="px-4 py-4 font-semibold text-slate-900">{{ $user->name }}</td>
                                 <td class="px-4 py-4 text-slate-700">{{ $user->email }}</td>
+                                <td class="px-4 py-4 text-slate-600">{{ $user->phone ?? '—' }}</td>
+                                <td class="px-4 py-4">
+                                    @if ($pivot)
+                                        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800">{{ \App\Organizations\OrganizationRole::label((string) $pivot->role) }}</span>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if ($pivot)
+                                        <span class="text-sm font-semibold {{ $pivot->is_active ? 'text-emerald-700' : 'text-slate-500' }}">{{ $pivot->is_active ? __('users.active_in_org') : __('users.inactive_in_org') }}</span>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if (\App\Enums\UserAccountStatus::isSuspended($user->status))
+                                        <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 ring-1 ring-amber-200">{{ \App\Enums\UserAccountStatus::label($user->status) }}</span>
+                                    @else
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900 ring-1 ring-emerald-200">{{ \App\Enums\UserAccountStatus::label($user->status) }}</span>
+                                    @endif
+                                </td>
                                 @if ($canManage)
-                                    <td class="px-4 py-4">
-                                        <form action="{{ route('users.update', $user) }}" method="POST" id="{{ $fid }}" class="hidden">
-                                            @csrf
-                                            @method('PATCH')
-                                        </form>
-                                        <input form="{{ $fid }}" name="phone" value="{{ old('phone', $user->phone) }}" class="block w-full min-w-[9rem] rounded-xl border-slate-300 text-sm shadow-sm" />
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <select form="{{ $fid }}" name="role" class="block w-full rounded-xl border-slate-300 text-sm shadow-sm">
-                                            @foreach (\App\Organizations\OrganizationRole::ALL as $role)
-                                                <option value="{{ $role }}" @selected($pivot->role === $role)>{{ \App\Organizations\OrganizationRole::label($role) }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <input type="hidden" form="{{ $fid }}" name="is_active" value="0" />
-                                        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                                            <input type="checkbox" form="{{ $fid }}" name="is_active" value="1" class="rounded border-slate-300 text-brand-600" @checked($pivot->is_active) />
-                                            {{ __('users.active') }}
-                                        </label>
-                                    </td>
-                                    <td class="px-4 py-4 text-right space-x-2">
-                                        <button type="submit" form="{{ $fid }}" class="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-brand-700">{{ __('users.save') }}</button>
+                                    <td class="px-4 py-4 text-right space-x-2 whitespace-nowrap">
+                                        <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-brand-700">{{ __('users.edit_button') }}</a>
                                         @if (($canAdmin ?? false) && $user->id !== auth()->id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm(@json(__('users.delete_from_org_confirm')));">
                                                 @csrf
@@ -109,10 +110,6 @@
                                             </form>
                                         @endif
                                     </td>
-                                @else
-                                    <td class="px-4 py-4 text-slate-600">{{ $user->phone ?? '—' }}</td>
-                                    <td class="px-4 py-4"><span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800">{{ \App\Organizations\OrganizationRole::label($pivot->role) }}</span></td>
-                                    <td class="px-4 py-4"><span class="text-sm font-semibold {{ $pivot->is_active ? 'text-emerald-700' : 'text-slate-500' }}">{{ $pivot->is_active ? __('users.active') : __('users.inactive') }}</span></td>
                                 @endif
                             </tr>
                         @endforeach

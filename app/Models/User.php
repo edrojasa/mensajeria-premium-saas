@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Actions\Auth\EnsureDefaultOrganizationMembership;
+use App\Enums\UserAccountStatus;
 use App\Organizations\OrganizationRole;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,6 +43,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'status',
     ];
 
     /**
@@ -62,6 +64,11 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function isAccountSuspended(): bool
+    {
+        return UserAccountStatus::isSuspended($this->status);
+    }
 
     public function organizations(): BelongsToMany
     {

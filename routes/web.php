@@ -31,14 +31,14 @@ Route::post('/seguimiento/consultar', [PublicTrackingController::class, 'lookup'
 Route::get('/seguimiento/{organization_slug}/{tracking_number}', [PublicTrackingController::class, 'show'])
     ->name('tracking.public');
 
-Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'tenant'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'account.active', 'tenant'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'account.active'])->group(function () {
     Route::post('/organization/switch', [OrganizationSwitcherController::class, 'update'])
         ->name('organization.switch');
 });
 
-Route::middleware(['auth', 'tenant'])->group(function () {
+Route::middleware(['auth', 'account.active', 'tenant'])->group(function () {
     Route::get('/logs', [ActivityLogController::class, 'index'])
         ->name('logs.index');
 
@@ -99,8 +99,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('/users', [OrganizationUserController::class, 'store'])
         ->name('users.store');
 
+    Route::get('/users/{user}/edit', [OrganizationUserController::class, 'edit'])
+        ->name('users.edit');
+
     Route::patch('/users/{user}', [OrganizationUserController::class, 'update'])
         ->name('users.update');
+
+    Route::patch('/users/{user}/suspend', [OrganizationUserController::class, 'suspend'])
+        ->name('users.suspend');
+
+    Route::patch('/users/{user}/activate', [OrganizationUserController::class, 'activate'])
+        ->name('users.activate');
 
     Route::delete('/users/{user}', [OrganizationUserController::class, 'destroy'])
         ->name('users.destroy');

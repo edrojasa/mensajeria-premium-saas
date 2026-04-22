@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Audit\AuditActions;
+use App\Enums\UserAccountStatus;
 use App\Http\Requests\StoreOrganizationUserRequest;
+use App\Http\Requests\UpdateOrganizationUserRequest;
 use App\Models\User;
 use App\Organizations\OrganizationRole;
 use App\Services\ActivityLogger;
@@ -12,7 +14,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OrganizationUserController extends Controller
@@ -61,6 +62,7 @@ class OrganizationUserController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($validated['password']),
+                'status' => UserAccountStatus::ACTIVE,
             ]);
 
             $created->organizations()->attach($orgId, [
@@ -83,7 +85,7 @@ class OrganizationUserController extends Controller
             ->with('status', __('users.created_success'));
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function edit(Request $request, User $user): View
     {
         abort_unless(auth()->user()->canManageOrganizationUsers(), 403);
 
@@ -92,21 +94,44 @@ class OrganizationUserController extends Controller
             abort(404);
         }
 
-        $validated = $request->validate([
-            'role' => ['required', Rule::in(OrganizationRole::ALL)],
-            'is_active' => ['required', 'boolean'],
-            'phone' => ['nullable', 'string', 'max:32'],
+        $user->load(['organizations' => fn ($q) => $q->where('organizations.id', $orgId)]);
+        $organization = $user->organizations->first();
+
+        abort_if($organization === null, 404);
+
+        return view('users.edit', [
+            'member' => $user,
+            'pivot' => $organization->pivot,
+            'canSuspendOrActivate' => OrganizationRole::hasFullAccess(auth()->user()->roleInCurrentOrganization()),
         ]);
+    }
+
+    public function update(UpdateOrganizationUserRequest $request, User $user): RedirectResponse
+    {
+        $orgId = tenant_id();
+        if ($orgId === null || ! $user->belongsToOrganization($orgId)) {
+            abort(404);
+        }
+
+        $validated = $request->validated();
 
         DB::transaction(function () use ($user, $validated, $orgId): void {
+            $user->forceFill([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+            ]);
+
+            if (! empty($validated['password'])) {
+                $user->password = Hash::make($validated['password']);
+            }
+
+            $user->save();
+
             $user->organizations()->updateExistingPivot($orgId, [
                 'role' => $validated['role'],
                 'is_active' => $validated['is_active'],
             ]);
-
-            $user->forceFill([
-                'phone' => $validated['phone'] ?? null,
-            ])->save();
         });
 
         ActivityLogger::log(
@@ -116,7 +141,69 @@ class OrganizationUserController extends Controller
             $user
         );
 
-        return back()->with('status', __('users.updated_success'));
+        return redirect()
+            ->route('users.index')
+            ->with('status', __('users.updated_success'));
+    }
+
+    public function suspend(Request $request, User $user): RedirectResponse
+    {
+        abort_unless(
+            OrganizationRole::hasFullAccess(auth()->user()->roleInCurrentOrganization()),
+            403
+        );
+
+        $orgId = tenant_id();
+        if ($orgId === null || ! $user->belongsToOrganization($orgId)) {
+            abort(404);
+        }
+
+        if ($request->user()->id === $user->id) {
+            return back()->withErrors(__('users.cannot_suspend_self'));
+        }
+
+        $user->forceFill([
+            'status' => UserAccountStatus::SUSPENDED,
+        ])->save();
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::USER_SUSPENDED,
+            __('audit.user_suspended', ['name' => $user->name]),
+            $user
+        );
+
+        return redirect()
+            ->route('users.edit', $user)
+            ->with('status', __('users.account_suspend_success'));
+    }
+
+    public function activate(Request $request, User $user): RedirectResponse
+    {
+        abort_unless(
+            OrganizationRole::hasFullAccess(auth()->user()->roleInCurrentOrganization()),
+            403
+        );
+
+        $orgId = tenant_id();
+        if ($orgId === null || ! $user->belongsToOrganization($orgId)) {
+            abort(404);
+        }
+
+        $user->forceFill([
+            'status' => UserAccountStatus::ACTIVE,
+        ])->save();
+
+        ActivityLogger::log(
+            $request->user(),
+            AuditActions::USER_ACTIVATED,
+            __('audit.user_activated', ['name' => $user->name]),
+            $user
+        );
+
+        return redirect()
+            ->route('users.edit', $user)
+            ->with('status', __('users.account_activate_success'));
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

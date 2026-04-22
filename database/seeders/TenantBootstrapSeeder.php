@@ -27,7 +27,8 @@ class TenantBootstrapSeeder extends Seeder
                 ['email' => 'andresrojas@rojastech.com.co'],
                 [
                     'name' => 'Andres Rojas',
-                    'password' => Hash::make('12345678'),
+                    'password' => Hash::make('123456'),
+                    'email_verified_at' => now(),
                 ]
             );
 

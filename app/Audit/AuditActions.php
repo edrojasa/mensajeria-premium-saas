@@ -39,4 +39,8 @@ final class AuditActions
     public const USER_DEACTIVATED = 'user.deactivated';
 
     public const USER_FORCE_DELETED = 'user.force_deleted';
+
+    public const USER_SUSPENDED = 'user.suspended';
+
+    public const USER_ACTIVATED = 'user.activated';
 }
